@@ -1,14 +1,25 @@
-if BOARD_LENOVO_X200
+if BOARD_LENOVO_X61
 
 config BOARD_SPECIFIC_OPTIONS # dummy
 	def_bool y
-	select CPU_INTEL_SOCKET_BGA956
-	select NORTHBRIDGE_INTEL_GM45
-	select SOUTHBRIDGE_INTEL_I82801IX
+	# This is in fact a CPU_INTEL_SOCKET_MPGA479M,
+	# but http://permalink.gmane.org/gmane.linux.bios/64292
+	select CPU_INTEL_SOCKET_MFCPGA478
+	# I965PM
+	select NORTHBRIDGE_INTEL_I965
+	# 82801HEM (ICH8M-E)
+	select SOUTHBRIDGE_INTEL_I82801HX
+	# 05:00.0 CardBus bridge: Ricoh Co Ltd RL5c476 II (rev ba)
+	select SOUTHBRIDGE_RICOH_RL5C476
+	# Found NSC PC87382 (sid=0xf4, srid=0x04) at 0x164e
+	select SUPERIO_NSC_PC87382
+	# This one is in dock:
+	select SUPERIO_NSC_PC87392
 	select EC_LENOVO_PMH7
 	select EC_LENOVO_H8
+	# clock SLG8LP564
 	select DRIVERS_ICS_954309
-	select BOARD_ROMSIZE_KB_8192
+	select BOARD_ROMSIZE_KB_4096
 	select DRIVERS_GENERIC_IOAPIC
 	select HAVE_MP_TABLE
 	select HAVE_ACPI_TABLES
@@ -23,15 +34,15 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 
 config MAINBOARD_DIR
 	string
-	default lenovo/x200
+	default lenovo/x61
 
 config MAINBOARD_PART_NUMBER
 	string
-	default "7458CY9"
+	default "7666WJ5"
 
 config MAINBOARD_VERSION
 	string
-	default "ThinkPad X200 / X200s / X200t"
+	default "ThinkPad X61"
 
 config MAINBOARD_VENDOR
 	string
