@@ -32,7 +32,7 @@
 
 #include "drivers/intel/gma/i915_reg.h"
 #include "chip.h"
-#include "gm45.h"
+#include "i965.h"
 #include <drivers/intel/gma/intel_bios.h>
 #include <drivers/intel/gma/edid.h>
 #include <drivers/intel/gma/i915.h>
@@ -127,7 +127,7 @@ static void power_port(u32 mmio)
 	read32(mmio + LVDS); // = 0x40000002
 }
 
-static void intel_gma_init(const struct northbridge_intel_gm45_config *info,
+static void intel_gma_init(const struct northbridge_intel_i965_config *info,
 			   u32 mmio, u32 physbase, u16 piobase, u32 lfb)
 {
 
@@ -457,7 +457,7 @@ static void intel_gma_init(const struct northbridge_intel_gm45_config *info,
 #endif
 }
 
-static size_t generate_vbt(const struct northbridge_intel_gm45_config *conf,
+static size_t generate_vbt(const struct northbridge_intel_i965_config *conf,
 			   void *vbt)
 {
 	struct vbt_header *head = vbt;
@@ -524,7 +524,7 @@ static void gma_func0_init(struct device *dev)
 	pci_dev_init(dev);
 #else
 	u32 physbase;
-	struct northbridge_intel_gm45_config *conf = dev->chip_info;
+	struct northbridge_intel_i965_config *conf = dev->chip_info;
 	struct resource *lfb_res;
 	struct resource *pio_res;
 

@@ -28,7 +28,7 @@
 #include <console/console.h>
 #include <cpu/x86/msr.h>
 
-#include "gm45.h"
+#include "i965.h"
 
 static int sku_freq_index(const gmch_gfx_t sku, const int low_power_mode)
 {

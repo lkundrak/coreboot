@@ -29,7 +29,7 @@
 #include <console/console.h>
 #include "delay.h"
 
-#include "gm45.h"
+#include "i965.h"
 
 void raminit_thermal(const sysinfo_t *sysinfo)
 {

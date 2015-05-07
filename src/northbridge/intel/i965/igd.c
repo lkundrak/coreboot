@@ -26,7 +26,7 @@
 #include <console/console.h>
 #include <pc80/mc146818rtc.h>
 
-#include "gm45.h"
+#include "i965.h"
 
 /* TODO: Chipset supports Protected Audio Video Path (PAVP) */
 

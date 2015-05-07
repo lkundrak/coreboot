@@ -20,7 +20,7 @@
  */
 
 #include "hostbridge.asl"
-#include "../gm45.h"
+#include "../i965.h"
 
 /* PCI Device Resource Consumption */
 Device (PDRC)

@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <arch/io.h>
 #include <console/console.h>
-#include "gm45.h"
+#include "i965.h"
 
 #define CxRECy_MCHBAR(x, y)	(0x14a0 + (x * 0x0100) + ((3 - y) * 4))
 #define CxRECy_SHIFT_L		0

@@ -21,9 +21,9 @@
 
 #include <types.h>
 #include <arch/io.h>
-#include "gm45.h"
+#include "i965.h"
 
-void gm45_early_reset(void/*const timings_t *const timings*/)
+void i965_early_reset(void/*const timings_t *const timings*/)
 {
 	int ch, r;
 

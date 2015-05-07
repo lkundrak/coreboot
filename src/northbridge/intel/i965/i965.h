@@ -18,10 +18,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __NORTHBRIDGE_INTEL_GM45_GM45_H__
-#define __NORTHBRIDGE_INTEL_GM45_GM45_H__ 1
+#ifndef __NORTHBRIDGE_INTEL_I965_I965_H__
+#define __NORTHBRIDGE_INTEL_I965_I965_H__ 1
 
-#include "southbridge/intel/i82801ix/i82801ix.h"
+#include "southbridge/intel/i82801hx/i82801hx.h"
 
 #ifndef __ACPI__
 
@@ -403,8 +403,8 @@ enum {
 
 
 #ifndef __ACPI__
-void gm45_early_init(void);
-void gm45_early_reset(void);
+void i965_early_init(void);
+void i965_early_reset(void);
 
 void enter_raminit_or_reset(void);
 void get_gmch_info(sysinfo_t *);
@@ -423,7 +423,7 @@ void raminit_receive_enable_calibration(const timings_t *, const dimminfo_t *);
 void raminit_write_training(const mem_clock_t, const dimminfo_t *, int s3resume);
 void raminit_read_training(const dimminfo_t *, int s3resume);
 
-void gm45_late_init(stepping_t);
+void i965_late_init(stepping_t);
 
 u32 decode_igd_memory_size(u32 gms);
 u32 decode_igd_gtt_size(u32 gsm);

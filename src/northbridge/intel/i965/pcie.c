@@ -27,7 +27,7 @@
 #include <device/pnp_def.h>
 #include <console/console.h>
 
-#include "gm45.h"
+#include "i965.h"
 
 static void init_egress(void)
 {
@@ -330,7 +330,7 @@ static void setup_rcrb(const int peg_enabled)
 	DMIBAR32(DMILE2A) = DEFAULT_MCHBAR;
 }
 
-void gm45_late_init(const stepping_t stepping)
+void i965_late_init(const stepping_t stepping)
 {
 	const device_t mch = PCI_DEV(0, 0, 0);
 	const int peg_enabled = (pci_read_config8(mch, D0F0_DEVEN) >> 1) & 1;

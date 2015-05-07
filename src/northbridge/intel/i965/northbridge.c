@@ -31,7 +31,7 @@
 #include <arch/acpi.h>
 #include <cbmem.h>
 #include "chip.h"
-#include "gm45.h"
+#include "i965.h"
 #include "arch/acpi.h"
 
 /* Reserve segments A and B:
@@ -249,7 +249,7 @@ static void enable_dev(device_t dev)
 	}
 }
 
-static void gm45_init(void *const chip_info)
+static void i965_init(void *const chip_info)
 {
 	int dev, fn, bit_base;
 
@@ -286,8 +286,8 @@ static void gm45_init(void *const chip_info)
 		pci_write_config32(d0f0, D0F0_DEVEN, deven & ~(1 << 14));
 }
 
-struct chip_operations northbridge_intel_gm45_ops = {
-	CHIP_NAME("Intel GM45 Northbridge")
+struct chip_operations northbridge_intel_i965_ops = {
+	CHIP_NAME("Intel i965 Northbridge")
 	.enable_dev = enable_dev,
-	.init = gm45_init,
+	.init = i965_init,
 };

@@ -29,7 +29,7 @@
 #include <console/console.h>
 #include <lib.h>
 #include "delay.h"
-#include "gm45.h"
+#include "i965.h"
 
 static const gmch_gfx_t gmch_gfx_types[][5] = {
 /*  MAX_667MHz    MAX_533MHz    MAX_400MHz    MAX_333MHz    MAX_800MHz    */
@@ -226,7 +226,7 @@ void enter_raminit_or_reset(void)
 		pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, reg8 & ~(1 << 7));
 
 		printk(BIOS_INFO, "Interrupted RAM init, reset required.\n");
-		gm45_early_reset();
+		i965_early_reset();
 	}
 	/* Mark system to be in RAM init. */
 	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, reg8 | (1 << 7));
@@ -692,7 +692,7 @@ static void reset_on_bad_warmboot(void)
 	if ((reg & PMSTS_WARM_RESET) && !(reg & PMSTS_BOTH_SELFREFRESH)) {
 		printk(BIOS_INFO, "DRAM was not in self refresh "
 			"during warm boot, reset required.\n");
-		gm45_early_reset();
+		i965_early_reset();
 	}
 }
 

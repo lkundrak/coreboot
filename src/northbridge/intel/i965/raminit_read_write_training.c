@@ -22,7 +22,7 @@
 #include <arch/io.h>
 #include <pc80/mc146818rtc.h>
 #include <console/console.h>
-#include "gm45.h"
+#include "i965.h"
 
 typedef struct {
 	u32 addr[RANKS_PER_CHANNEL];

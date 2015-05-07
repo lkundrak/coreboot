@@ -18,14 +18,14 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef NORTHBRIDGE_INTEL_GM45_CHIP_H
-#define NORTHBRIDGE_INTEL_GM45_CHIP_H
+#ifndef NORTHBRIDGE_INTEL_I965_CHIP_H
+#define NORTHBRIDGE_INTEL_I965_CHIP_H
 
-struct northbridge_intel_gm45_config {
+struct northbridge_intel_i965_config {
 	int gpu_use_spread_spectrum_clock;
 	int gpu_lvds_dual_channel;
 	int gpu_link_frequency_270_mhz;
 	int gpu_lvds_num_lanes;
 };
 
-#endif				/* NORTHBRIDGE_INTEL_GM45_CHIP_H */
+#endif				/* NORTHBRIDGE_INTEL_I965_CHIP_H */

@@ -26,7 +26,7 @@
 #include <device/pci_def.h>
 #include <arch/acpi.h>
 
-#include "gm45.h"
+#include "i965.h"
 
 void init_iommu()
 {

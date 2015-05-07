@@ -17,10 +17,10 @@
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
-config NORTHBRIDGE_INTEL_GM45
+config NORTHBRIDGE_INTEL_I965
 	bool
 
-if NORTHBRIDGE_INTEL_GM45
+if NORTHBRIDGE_INTEL_I965
 
 config NORTHBRIDGE_SPECIFIC_OPTIONS # dummy
 	def_bool y
@@ -34,7 +34,7 @@ config NORTHBRIDGE_SPECIFIC_OPTIONS # dummy
 
 config BOOTBLOCK_NORTHBRIDGE_INIT
 	string
-	default "northbridge/intel/gm45/bootblock.c"
+	default "northbridge/intel/i965/bootblock.c"
 
 config CBFS_SIZE
 	hex "Size of CBFS filesystem in ROM"

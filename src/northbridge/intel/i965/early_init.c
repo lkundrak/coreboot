@@ -19,9 +19,9 @@
 
 #include <stdint.h>
 #include <arch/io.h>
-#include "gm45.h"
+#include "i965.h"
 
-void gm45_early_init(void)
+void i965_early_init(void)
 {
 	const device_t d0f0 = PCI_DEV(0, 0, 0);
 

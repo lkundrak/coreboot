@@ -1,6 +1,6 @@
 #include <arch/io.h>
 
-/* Just re-define these instead of including gm45.h. It blows up romcc. */
+/* Just re-define these instead of including i965.h. It blows up romcc. */
 #define D0F0_PCIEXBAR_LO 0x60
 #define D0F0_PCIEXBAR_HI 0x64
 

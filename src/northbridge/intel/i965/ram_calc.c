@@ -27,7 +27,7 @@
 #include <device/pci_def.h>
 #include <console/console.h>
 #include <cbmem.h>
-#include "gm45.h"
+#include "i965.h"
 
 /** Decodes used Graphics Mode Select (GMS) to kilobytes. */
 u32 decode_igd_memory_size(const u32 gms)

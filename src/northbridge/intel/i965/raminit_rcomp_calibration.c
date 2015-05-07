@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <delay.h>
 #include <console/console.h>
-#include "gm45.h"
+#include "i965.h"
 
 static const int ddr3_lookup_schedule[6][2] = {
 	{ 0, 1 }, { 2, 3 }, { 4, 5 }, { 4, 5 }, { 6, 7 }, { 6, 7 }
