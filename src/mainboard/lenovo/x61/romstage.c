@@ -289,6 +289,7 @@ void main(unsigned long bist)
         enable_smbus();
         dump_spd_registers();
 
+#if 0
 	/* RAM initialization */
 	enter_raminit_or_reset();
 	memset(&sysinfo, 0, sizeof(sysinfo));
@@ -298,6 +299,7 @@ void main(unsigned long bist)
 	sysinfo.enable_peg = 0;
 	get_gmch_info(&sysinfo);
 	raminit(&sysinfo, s3resume);
+#endif
 
 	const u32 deven = pci_read_config32(MCH_DEV, D0F0_DEVEN);
 	/* Disable D4F0 (unknown signal controller). */

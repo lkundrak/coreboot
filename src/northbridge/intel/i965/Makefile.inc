@@ -19,15 +19,15 @@
 
 romstage-y += early_init.c
 romstage-y += early_reset.c
-romstage-y += delay.c
-romstage-y += raminit.c
-romstage-y += raminit_rcomp_calibration.c
-romstage-y += raminit_receive_enable_calibration.c
-romstage-y += raminit_read_write_training.c
+#romstage-y += delay.c
+#romstage-y += raminit.c
+#romstage-y += raminit_rcomp_calibration.c
+#romstage-y += raminit_receive_enable_calibration.c
+#romstage-y += raminit_read_write_training.c
 romstage-y += pcie.c
 romstage-y += thermal.c
-romstage-y += igd.c
-romstage-y += pm.c
+#romstage-y += igd.c
+#romstage-y += pm.c
 romstage-y += ram_calc.c
 romstage-$(CONFIG_IOMMU) += iommu.c
 romstage-y += debug.c
