@@ -19,7 +19,7 @@
  * MA 02110-1301 USA
  */
 
-/* Intel i82801I USB support */
+/* Intel i82801H USB support */
 
 // USB Controller 0:1d.0
 

@@ -19,7 +19,7 @@
  * MA 02110-1301 USA
  */
 
-/* Intel 82801Ix support */
+/* Intel 82801Hx support */
 
 Scope(\)
 {

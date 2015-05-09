@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SOUTHBRIDGE_INTEL_I82801GX_I82801IX_H
-#define SOUTHBRIDGE_INTEL_I82801GX_I82801IX_H
+#ifndef SOUTHBRIDGE_INTEL_I82801HX_I82801HX_H
+#define SOUTHBRIDGE_INTEL_I82801HX_I82801HX_H
 
 #ifndef __ACPI__
 #ifndef __ASSEMBLER__
@@ -246,9 +246,9 @@ static inline int lpc_is_mobile(const u16 devid)
 #if defined(__PRE_RAM__)
 void enable_smbus(void);
 int smbus_read_byte(unsigned device, unsigned address);
-void i82801ix_early_init(void);
-void i82801ix_dmi_setup(void);
-void i82801ix_dmi_poll_vc1(void);
+void i82801hx_early_init(void);
+void i82801hx_dmi_setup(void);
+void i82801hx_dmi_poll_vc1(void);
 #endif
 
 #endif

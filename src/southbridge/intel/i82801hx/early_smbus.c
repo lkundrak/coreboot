@@ -23,7 +23,7 @@
 #include <console/console.h>
 #include <device/pci_ids.h>
 #include <device/pci_def.h>
-#include "i82801ix.h"
+#include "i82801hx.h"
 #include "smbus.h"
 
 void enable_smbus(void)

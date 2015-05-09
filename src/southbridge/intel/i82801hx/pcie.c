@@ -112,7 +112,7 @@ static struct device_operations device_ops = {
 	.ops_pci		= &pci_ops,
 };
 
-/* 82801Ix (ICH9DH/ICH9DO/ICH9R/ICH9/ICH9M-E/ICH9M) */
+/* 82801Hx (ICH9DH/ICH9DO/ICH9R/ICH9/ICH9M-E/ICH9M) */
 static const unsigned short pci_device_ids[] = {
 	0x2940, /* Port 1 */
 	0x2942, /* Port 2 */

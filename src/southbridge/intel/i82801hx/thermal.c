@@ -24,7 +24,7 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 
-#include "i82801ix.h"
+#include "i82801hx.h"
 
 static void thermal_init(struct device *dev)
 {

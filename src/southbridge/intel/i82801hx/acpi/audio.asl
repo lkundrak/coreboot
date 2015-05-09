@@ -19,7 +19,7 @@
  * MA 02110-1301 USA
  */
 
-/* Intel i82801I HDA */
+/* Intel i82801H HDA */
 
 // Intel High Definition Audio (Azalia) 0:1b.0
 

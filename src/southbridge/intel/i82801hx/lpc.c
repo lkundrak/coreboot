@@ -31,16 +31,16 @@
 #include <arch/acpi.h>
 #include <cpu/cpu.h>
 #include <cpu/x86/smm.h>
-#include "i82801ix.h"
+#include "i82801hx.h"
 
 #define NMI_OFF	0
 
 #define ENABLE_ACPI_MODE_IN_COREBOOT	0
 #define TEST_SMM_FLASH_LOCKDOWN		0
 
-typedef struct southbridge_intel_i82801ix_config config_t;
+typedef struct southbridge_intel_i82801hx_config config_t;
 
-static void i82801ix_enable_apic(struct device *dev)
+static void i82801hx_enable_apic(struct device *dev)
 {
 	u32 reg32;
 	volatile u32 *ioapic_index = (volatile u32 *)(IO_APIC_ADDR);
@@ -60,7 +60,7 @@ static void i82801ix_enable_apic(struct device *dev)
 	setup_ioapic(IO_APIC_ADDR, 2); /* ICH7 code uses id 2. */
 }
 
-static void i82801ix_enable_serial_irqs(struct device *dev)
+static void i82801hx_enable_serial_irqs(struct device *dev)
 {
 	/* Set packet length and toggle silent mode bit for one frame. */
 	pci_write_config8(dev, D31F0_SERIRQ_CNTL,
@@ -88,7 +88,7 @@ static void i82801ix_enable_serial_irqs(struct device *dev)
  * 0x80 - The PIRQ is not routed.
  */
 
-static void i82801ix_pirq_init(device_t dev)
+static void i82801hx_pirq_init(device_t dev)
 {
 	device_t irq_dev;
 	/* Get the chip configuration */
@@ -130,7 +130,7 @@ static void i82801ix_pirq_init(device_t dev)
 	}
 }
 
-static void i82801ix_gpi_routing(device_t dev)
+static void i82801hx_gpi_routing(device_t dev)
 {
 	/* Get the chip configuration */
 	config_t *config = dev->chip_info;
@@ -159,7 +159,7 @@ static void i82801ix_gpi_routing(device_t dev)
 	pci_write_config32(dev, D31F0_GPIO_ROUT, reg32);
 }
 
-static void i82801ix_power_options(device_t dev)
+static void i82801hx_power_options(device_t dev)
 {
 	u8 reg8;
 	u16 reg16, pmbase;
@@ -243,7 +243,7 @@ static void i82801ix_power_options(device_t dev)
 	// reg16 &= ~(1 << 10);	// BIOS_PCI_EXP_EN - Desktop/Mobile only
 	reg16 |= (1 << 10);	// BIOS_PCI_EXP_EN - Desktop/Mobile only
 #if DEBUG_PERIODIC_SMIS
-	/* Set DEBUG_PERIODIC_SMIS in i82801ix.h to debug using
+	/* Set DEBUG_PERIODIC_SMIS in i82801hx.h to debug using
 	 * periodic SMIs.
 	 */
 	reg16 |= (3 << 0); // Periodic SMI every 8s
@@ -266,7 +266,7 @@ static void i82801ix_power_options(device_t dev)
 	}
 
 	// Set the board's GPI routing.
-	i82801ix_gpi_routing(dev);
+	i82801hx_gpi_routing(dev);
 
 	pmbase = pci_read_config16(dev, 0x40) & 0xfffe;
 
@@ -291,7 +291,7 @@ static void i82801ix_power_options(device_t dev)
 	outl(reg32, pmbase + 0x10);
 }
 
-static void i82801ix_configure_cstates(device_t dev)
+static void i82801hx_configure_cstates(device_t dev)
 {
 	u8 reg8;
 
@@ -309,7 +309,7 @@ static void i82801ix_configure_cstates(device_t dev)
 	/* We could enable slow-C4 exit here, if someone needs it? */
 }
 
-static void i82801ix_rtc_init(struct device *dev)
+static void i82801hx_rtc_init(struct device *dev)
 {
 	u8 reg8;
 	int rtc_failed;
@@ -368,7 +368,7 @@ static void enable_clock_gating(void)
 }
 
 #if CONFIG_HAVE_SMI_HANDLER
-static void i82801ix_lock_smm(struct device *dev)
+static void i82801hx_lock_smm(struct device *dev)
 {
 #if TEST_SMM_FLASH_LOCKDOWN
 	u8 reg8;
@@ -424,28 +424,28 @@ static void i82801ix_lock_smm(struct device *dev)
 
 static void lpc_init(struct device *dev)
 {
-	printk(BIOS_DEBUG, "i82801ix: lpc_init\n");
+	printk(BIOS_DEBUG, "i82801hx: lpc_init\n");
 
 	/* Set the value for PCI command register. */
 	pci_write_config16(dev, PCI_COMMAND, 0x000f);
 
 	/* IO APIC initialization. */
-	i82801ix_enable_apic(dev);
+	i82801hx_enable_apic(dev);
 
-	i82801ix_enable_serial_irqs(dev);
+	i82801hx_enable_serial_irqs(dev);
 
 	/* Setup the PIRQ. */
-	i82801ix_pirq_init(dev);
+	i82801hx_pirq_init(dev);
 
 	/* Setup power options. */
-	i82801ix_power_options(dev);
+	i82801hx_power_options(dev);
 
 	/* Configure Cx state registers */
 	if (LPC_IS_MOBILE(dev))
-		i82801ix_configure_cstates(dev);
+		i82801hx_configure_cstates(dev);
 
 	/* Initialize the real time clock. */
-	i82801ix_rtc_init(dev);
+	i82801hx_rtc_init(dev);
 
 	/* Initialize ISA DMA. */
 	isa_dma_init();
@@ -463,11 +463,11 @@ static void lpc_init(struct device *dev)
 	i8259_configure_irq_trigger(9, 1);
 
 #if CONFIG_HAVE_SMI_HANDLER
-	i82801ix_lock_smm(dev);
+	i82801hx_lock_smm(dev);
 #endif
 }
 
-static void i82801ix_lpc_read_resources(device_t dev)
+static void i82801hx_lpc_read_resources(device_t dev)
 {
 	/*
 	 *             I/O Resources
@@ -539,7 +539,7 @@ static struct pci_operations pci_ops = {
 };
 
 static struct device_operations device_ops = {
-	.read_resources		= i82801ix_lpc_read_resources,
+	.read_resources		= i82801hx_lpc_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= lpc_init,

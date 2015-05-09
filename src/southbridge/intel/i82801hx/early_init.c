@@ -19,9 +19,9 @@
  */
 
 #include <arch/io.h>
-#include "i82801ix.h"
+#include "i82801hx.h"
 
-void i82801ix_early_init(void)
+void i82801hx_early_init(void)
 {
 	const device_t d31f0 = PCI_DEV(0, 0x1f, 0);
 

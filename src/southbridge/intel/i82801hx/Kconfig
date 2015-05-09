@@ -18,7 +18,7 @@
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
-config SOUTHBRIDGE_INTEL_I82801IX
+config SOUTHBRIDGE_INTEL_I82801HX
 	bool
 	select SOUTHBRIDGE_INTEL_COMMON
 	select IOAPIC
@@ -28,7 +28,7 @@ config SOUTHBRIDGE_INTEL_I82801IX
 	select HAVE_SMI_HANDLER
 	select HAVE_USBDEBUG_OPTIONS
 
-if SOUTHBRIDGE_INTEL_I82801IX
+if SOUTHBRIDGE_INTEL_I82801HX
 
 config EHCI_BAR
 	hex
@@ -36,7 +36,7 @@ config EHCI_BAR
 
 config BOOTBLOCK_SOUTHBRIDGE_INIT
         string
-	default "southbridge/intel/i82801ix/bootblock.c"
+	default "southbridge/intel/i82801hx/bootblock.c"
 
 endif
 

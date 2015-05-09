@@ -18,7 +18,7 @@
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 ##
 
-ramstage-y += i82801ix.c
+ramstage-y += i82801hx.c
 ramstage-y += pci.c
 ramstage-y += lpc.c
 ramstage-y += pcie.c

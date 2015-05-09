@@ -27,7 +27,7 @@
 #include <cpu/x86/smm.h>
 #include <device/pci_def.h>
 #include <pc80/mc146818rtc.h>
-#include "i82801ix.h"
+#include "i82801hx.h"
 
 #include "nvs.h"
 

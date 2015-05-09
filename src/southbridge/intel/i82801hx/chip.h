@@ -18,15 +18,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SOUTHBRIDGE_INTEL_I82801IX_CHIP_H
-#define SOUTHBRIDGE_INTEL_I82801IX_CHIP_H
+#ifndef SOUTHBRIDGE_INTEL_I82801HX_CHIP_H
+#define SOUTHBRIDGE_INTEL_I82801HX_CHIP_H
 
 enum {
 	THTL_DEF = 0, THTL_87_5 = 1, THTL_75_0 = 2, THTL_62_5 = 3,
 	THTL_50_0 = 4, THTL_37_5 = 5, THTL_25_0 = 6, THTL_12_5 = 7
 };
 
-struct southbridge_intel_i82801ix_config {
+struct southbridge_intel_i82801hx_config {
 	/**
 	 * Interrupt Routing configuration
 	 * If bit7 is 1, the interrupt is disabled.
@@ -90,4 +90,4 @@ struct southbridge_intel_i82801ix_config {
 	} pcie_power_limits[6];
 };
 
-#endif				/* SOUTHBRIDGE_INTEL_I82801IX_CHIP_H */
+#endif				/* SOUTHBRIDGE_INTEL_I82801HX_CHIP_H */
