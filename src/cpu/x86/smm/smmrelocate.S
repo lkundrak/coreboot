@@ -40,6 +40,8 @@
 #include "../../../southbridge/intel/bd82x6x/pch.h"
 #elif CONFIG_SOUTHBRIDGE_INTEL_FSP_BD82X6X
 #include "../../../southbridge/intel/fsp_bd82x6x/pch.h"
+#elif CONFIG_SOUTHBRIDGE_INTEL_I82801HX
+#include "../../../southbridge/intel/i82801hx/i82801hx.h"
 #elif CONFIG_SOUTHBRIDGE_INTEL_I82801IX
 #include "../../../southbridge/intel/i82801ix/i82801ix.h"
 #else
