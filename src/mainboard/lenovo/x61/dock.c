@@ -25,7 +25,7 @@
 #include <delay.h>
 #include <arch/io.h>
 #include "dock.h"
-#include "southbridge/intel/i82801gx/i82801gx.h"
+#include "southbridge/intel/i82801hx/i82801hx.h"
 #include "superio/nsc/pc87392/pc87392.h"
 
 static void dlpc_write_register(int reg, int value)

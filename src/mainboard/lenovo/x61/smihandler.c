@@ -20,8 +20,8 @@
 #include <arch/io.h>
 #include <console/console.h>
 #include <cpu/x86/smm.h>
-#include <southbridge/intel/i82801ix/nvs.h>
-#include <southbridge/intel/i82801ix/i82801ix.h>
+#include <southbridge/intel/i82801hx/nvs.h>
+#include <southbridge/intel/i82801hx/i82801hx.h>
 #include <ec/acpi/ec.h>
 
 /* The southbridge SMI handler checks whether gnvs has a

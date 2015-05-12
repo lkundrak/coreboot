@@ -31,8 +31,8 @@
 #include <lib.h>
 #include <pc80/mc146818rtc.h>
 #include <console/console.h>
-#include <southbridge/intel/i82801ix/i82801ix.h>
-#include <northbridge/intel/gm45/gm45.h>
+#include "southbridge/intel/i82801hx/i82801hx.h"
+#include "northbridge/intel/i965/i965.h"
 
 #define LPC_DEV PCI_DEV(0, 0x1f, 0)
 #define MCH_DEV PCI_DEV(0, 0, 0)
@@ -86,13 +86,13 @@ void main(unsigned long bist)
 			   0x42, 0x141);
 
 	/* basic northbridge setup, including MMCONF BAR */
-	gm45_early_init();
+	i965_early_init();
 
 	if (bist == 0)
 		enable_lapic();
 
 	/* First, run everything needed for console output. */
-	i82801ix_early_init();
+	i82801hx_early_init();
 	early_lpc_setup();
 	console_init();
 	printk(BIOS_DEBUG, "running main(bist = %lu)\n", bist);
@@ -101,7 +101,7 @@ void main(unsigned long bist)
 	pci_write_config16(LPC_DEV, D31F0_GEN_PMCON_3, reg16);
 	if ((MCHBAR16(SSKPD_MCHBAR) == 0xCAFE) && !(reg16 & (1 << 9))) {
 		printk(BIOS_DEBUG, "soft reset detected, rebooting properly\n");
-		gm45_early_reset();
+		i965_early_reset();
 	}
 
 	default_southbridge_gpio_setup();
@@ -140,9 +140,9 @@ void main(unsigned long bist)
 
 	init_pm(&sysinfo, 0);
 
-	i82801ix_dmi_setup();
-	gm45_late_init(sysinfo.stepping);
-	i82801ix_dmi_poll_vc1();
+	i82801hx_dmi_setup();
+	i965_late_init(sysinfo.stepping);
+	i82801hx_dmi_poll_vc1();
 
 	MCHBAR16(SSKPD_MCHBAR) = 0xCAFE;
 	/* Enable ethernet.  */

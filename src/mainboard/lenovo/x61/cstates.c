@@ -18,8 +18,8 @@
  */
 
 #include <arch/acpigen.h>
-#include <device/device.h> /* fix for i82801ix.h */
-#include <southbridge/intel/i82801ix/i82801ix.h>
+#include <device/device.h> /* fix for i82801hx.h */
+#include <southbridge/intel/i82801hx/i82801hx.h>
 
 static acpi_cstate_t cst_entries[] = {
 	{
