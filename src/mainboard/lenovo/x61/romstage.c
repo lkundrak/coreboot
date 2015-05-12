@@ -38,11 +38,16 @@
 #include <delay.h>
 #include "dock.h"
 
+// DEBUG
+#include <device/pci_def.h>
+#include "lib/debug.c"
+
 #define LPC_DEV PCI_DEV(0, 0x1f, 0)
 #define MCH_DEV PCI_DEV(0, 0, 0)
 
 static void default_southbridge_gpio_setup(void)
 {
+#if 0
 	outl(0x197e23fe, DEFAULT_GPIOBASE + 0x00);
 	outl(0xe1a66dfe, DEFAULT_GPIOBASE + 0x04);
 	outl(0xe3faef3f, DEFAULT_GPIOBASE + 0x0c);
@@ -58,6 +63,46 @@ static void default_southbridge_gpio_setup(void)
 	outl(0x1f55f9f1, DEFAULT_GPIOBASE + 0x34);
 	/* Set gpio levels [60:32].  */
 	outl(0x1dffff53, DEFAULT_GPIOBASE + 0x38);
+#endif
+#if 0 /* x60 */
+	printk(BIOS_DEBUG, " GPIOS...");
+
+	/* X60 GPIO:
+	 * 1: HDD_PRESENCE#
+	 * 6: Unknown (Pulled high by R215 to VCC3B)
+	 * 7: BDC_PRESENCE#
+	 * 8: H8_WAKE#
+	 * 9: RTC_BAT_IN#
+	 * 10: Unknown (Pulled high by R700 to VCC3M)
+	 * 12: H8SCI#
+	 * 13: SLICE_ON_3M#
+	 * 14: Unknown (Pulled high by R321 to VCC3)
+	 * 15: Unknown (Pulled high by R258 to VCC3)
+	 * 19: Unknown (Pulled low  by R594)
+	 * 21: Unknown (Pulled high by R145 to VCC3)
+	 * 22: FWH_WP#
+	 * 25: MDC_KILL#
+	 * 33: HDD_PRESENCE_2#
+	 * 35: CLKREQ_SATA#
+	 * 36: PLANARID0
+	 * 37: PLANARID1
+	 * 38: PLANARID2
+	 * 39: PLANARID3
+	 * 48: FWH_TBL#
+	 */
+
+	outl(0x1f40f7c2, DEFAULT_GPIOBASE + 0x00);	/* GPIO_USE_SEL */
+	outl(0xe0e8ffc3, DEFAULT_GPIOBASE + 0x04);	/* GP_IO_SEL */
+	outl(0xfbf6ddfd, DEFAULT_GPIOBASE + 0x0c);	/* GP_LVL */
+	/* Output Control Registers */
+	outl(0x00040000, DEFAULT_GPIOBASE + 0x18);	/* GPO_BLINK */
+	/* Input Control Registers */
+	outl(0x000039ff, DEFAULT_GPIOBASE + 0x2c);	/* GPI_INV */
+	outl(0x000100f2, DEFAULT_GPIOBASE + 0x30);	/* GPIO_USE_SEL2 */
+	outl(0x000000f0, DEFAULT_GPIOBASE + 0x34);	/* GP_IO_SEL2 */
+	outl(0x00030043, DEFAULT_GPIOBASE + 0x38);	/* GP_LVL */
+#endif
+
 }
 
 static void early_lpc_setup(void)
@@ -67,11 +112,96 @@ static void early_lpc_setup(void)
 	/* Configure serial IRQs.*/
 	pci_write_config8(LPC_DEV, D31F0_SERIRQ_CNTL, 0xd0);
 	/* Map COMa on 0x3f8, COMb on 0x2f8. */
-	pci_write_config16(LPC_DEV, D31F0_LPC_IODEC, 0x0010);
-	pci_write_config16(LPC_DEV, D31F0_LPC_EN, 0x3f0f);
+	pci_write_config16(LPC_DEV, D31F0_LPC_IODEC, 0x0010);		// XXX diff
+	pci_write_config16(LPC_DEV, D31F0_LPC_EN, 0x3f0f);		// XXX diff
+	/* range 0x1600 - 0x167f */
 	pci_write_config32(LPC_DEV, D31F0_GEN1_DEC, 0x7c1601);
+	/* range 0x15e0 - 0x10ef */
 	pci_write_config32(LPC_DEV, D31F0_GEN2_DEC, 0xc15e1);
+	/* range 0x1680 - 0x169f */
 	pci_write_config32(LPC_DEV, D31F0_GEN3_DEC, 0x1c1681);
+
+#if 0
+	// Enable Serial IRQ
+	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0x64, 0xd0);
+	// decode range
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x80, 0x0210);
+	// decode range
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x1f0d);
+
+	/* range 0x1600 - 0x167f */
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x84, 0x1601);
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x86, 0x007c);
+
+	/* range 0x15e0 - 0x10ef */
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x88, 0x15e1);
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x8a, 0x000c);
+
+	/* range 0x1680 - 0x169f */
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x8c, 0x1681);
+	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x8e, 0x001c);
+#endif
+}
+
+static void rcba_config(void)
+{
+#if 0
+	int i, size = 0x4000;
+	for (i = 0; i < size; i += 4) {
+		if (RCBA32(i) + RCBA32(i + 4) + RCBA32(i + 8) + RCBA32(i + 12) == 0)
+			continue;
+		printk(BIOS_SPEW, "0x%04x: ", i);
+		printk(BIOS_SPEW, "0x%08x ", RCBA32(i)); i += 4;
+		printk(BIOS_SPEW, "0x%08x ", RCBA32(i)); i += 4;
+		printk(BIOS_SPEW, "0x%08x ", RCBA32(i)); i += 4;
+		printk(BIOS_SPEW, "0x%08x\n", RCBA32(i));
+	}
+while (1) printk (BIOS_SPEW, "a");
+#else
+	die("lala\n");
+#endif
+#if 0 /* inteltool -a */
+	/* Enable ethernet.  */
+	RCBA32(0x3414) &= ~0x20; // 3414–3414h BUC Backed Up Control 00h R/W	// wut
+		// no reboot flag
+
+	RCBA32(0x0238) = 0x00543210; // 0238–023Bh RPFN Root Port Function Number for PCI Express Root Ports 00543210h R/WO, RO
+
+// wtf
+	RCBA32(0x0240) = 0x009c0b02;
+	RCBA32(0x0244) = 0x00a20b1a;
+	RCBA32(0x0248) = 0x005402cb;
+	RCBA32(0x0254) = 0x00470966;
+	RCBA32(0x0258) = 0x00470473;
+	RCBA32(0x0260) = 0x00e90825;
+	RCBA32(0x0278) = 0x00bc0efb;
+	RCBA32(0x027c) = 0x00c00f0b;
+	RCBA32(0x0280) = 0x00670000;
+	RCBA32(0x0284) = 0x006d0000;
+	RCBA32(0x0288) = 0x00600b4e;
+
+	RCBA32(0x1e10) = 0x00020800; // 1E10–1E17h TRCR Trapped Cycle Register 0000000000000000h RO
+	RCBA32(0x1e18) = 0x36ea00a0; // 1E18-1E1Fh TWDR Trapped Write Data Register 0000000000000000h RO
+	RCBA32(0x1e80) = 0x000c0801; // 1E80-1E87h IOTR0 I/O Trap Register 0 0000000000000000h R/W
+	RCBA32(0x1e84) = 0x000200f0; // 
+
+//wtf
+	RCBA32(0x2028) = 0x04c8f95e;
+	RCBA32(0x202c) = 0x055c095e;
+	RCBA32(0x204c) = 0x001ffc00;
+	RCBA32(0x2050) = 0x00100fff;
+	RCBA32(0x2090) = 0x37000000;
+	RCBA32(0x20b0) = 0x0c000000;
+	RCBA32(0x20d0) = 0x09000000;
+	RCBA32(0x20f0) = 0x05000000;
+
+	RCBA32(0x3400) = 0x0000001c; // 3400–3403h RC RTC Configuration 00000000h R/W, R/WLO
+	RCBA32(0x3410) = 0x00100461; // 3410–3413h GCS General Control and Status 000000yy0h R/W, R/WLO
+	RCBA32(0x3414) = 0x00000000; // 3414–3414h BUC Backed Up Control 00h R/W
+	RCBA32(0x341c) = 0xbf4f001f; // 341C–341Fh CG Clock Gating 00000000h R/W
+	RCBA32(0x3420) = 0x00000000; // 3420–3420h PDSW 00h R/W
+	RCBA32(0x3430) = 0x00000001; // 3430-3433h CIR8 Chipset Initialization Register 8 00000000h R/W
+#endif
 }
 
 static void early_superio_config(void)
@@ -92,11 +222,13 @@ static void early_superio_config(void)
 
 void main(unsigned long bist)
 {
-	sysinfo_t sysinfo;
+//	sysinfo_t sysinfo;
 	int s3resume = 0;
 	int cbmem_initted;
 	u16 reg16;
 
+
+#if 0 /* nic take ako 0x1c.3 neni? */
 	/* Enable expresscard hotplug events.  */
 	pci_write_config32(PCI_DEV (0, 0x1c, 3),
 			   0xd8,
@@ -104,6 +236,7 @@ void main(unsigned long bist)
 			   | (1 << 30));
 	pci_write_config16(PCI_DEV (0, 0x1c, 3),
 			   0x42, 0x141);
+#endif
 
 	/* basic northbridge setup, including MMCONF BAR */
 	i965_early_init();
@@ -127,6 +260,8 @@ void main(unsigned long bist)
 
 	console_init();
 	printk(BIOS_DEBUG, "running main(bist = %lu)\n", bist);
+
+//dump_pci_devices();
 
 	reg16 = pci_read_config16(LPC_DEV, D31F0_GEN_PMCON_3);
 	pci_write_config16(LPC_DEV, D31F0_GEN_PMCON_3, reg16);
@@ -169,51 +304,25 @@ void main(unsigned long bist)
 	/* Disable D4F0 (unknown signal controller). */
 	pci_write_config32(MCH_DEV, D0F0_DEVEN, deven & ~0x4000);
 
-	init_pm(&sysinfo, 0);
+//	init_pm(&sysinfo, 0);
 
 	i82801hx_dmi_setup();
-	i965_late_init(sysinfo.stepping);
+//	i965_late_init(sysinfo.stepping);
+	i965_late_init(0);
 	i82801hx_dmi_poll_vc1();
 
 	MCHBAR16(SSKPD_MCHBAR) = 0xCAFE;
-	/* Enable ethernet.  */
-	RCBA32(0x3414) &= ~0x20;
+	rcba_config ();
+	die("NO RAMINIT");
 
-	RCBA32(0x0238) = 0x00543210;
-	RCBA32(0x0240) = 0x009c0b02;
-	RCBA32(0x0244) = 0x00a20b1a;
-	RCBA32(0x0248) = 0x005402cb;
-	RCBA32(0x0254) = 0x00470966;
-	RCBA32(0x0258) = 0x00470473;
-	RCBA32(0x0260) = 0x00e90825;
-	RCBA32(0x0278) = 0x00bc0efb;
-	RCBA32(0x027c) = 0x00c00f0b;
-	RCBA32(0x0280) = 0x00670000;
-	RCBA32(0x0284) = 0x006d0000;
-	RCBA32(0x0288) = 0x00600b4e;
-	RCBA32(0x1e10) = 0x00020800;
-	RCBA32(0x1e18) = 0x36ea00a0;
-	RCBA32(0x1e80) = 0x000c0801;
-	RCBA32(0x1e84) = 0x000200f0;
-	RCBA32(0x2028) = 0x04c8f95e;
-	RCBA32(0x202c) = 0x055c095e;
-	RCBA32(0x204c) = 0x001ffc00;
-	RCBA32(0x2050) = 0x00100fff;
-	RCBA32(0x2090) = 0x37000000;
-	RCBA32(0x20b0) = 0x0c000000;
-	RCBA32(0x20d0) = 0x09000000;
-	RCBA32(0x20f0) = 0x05000000;
-	RCBA32(0x3400) = 0x0000001c;
-	RCBA32(0x3410) = 0x00100461;
-	RCBA32(0x3414) = 0x00000000;
-	RCBA32(0x341c) = 0xbf4f001f;
-	RCBA32(0x3420) = 0x00000000;
-	RCBA32(0x3430) = 0x00000001;
-
+#if 0 /* no iommu */
 	init_iommu();
+#endif
 
+#if 0
 	/* FIXME: make a proper SMBUS mux support.  */
 	outl(inl(DEFAULT_GPIOBASE + 0x38) & ~0x400, DEFAULT_GPIOBASE + 0x38);
+#endif
 
 	cbmem_initted = !cbmem_recovery(s3resume);
 #if CONFIG_HAVE_ACPI_RESUME
