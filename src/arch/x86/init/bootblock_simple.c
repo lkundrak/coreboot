@@ -1,9 +1,6 @@
 #include <smp/node.h>
 #include <bootblock_common.h>
 
-#include "serial.c"
-#include "console.c"
-
 static void main(unsigned long bist)
 {
 	if (boot_cpu()) {
@@ -16,14 +13,6 @@ static void main(unsigned long bist)
 		cmos_post_init();
 #endif
 	}
-
-	outb(0xc0, 0x80);
-	init_console ();
-	outb(0xd0, 0x80);
-	sio_init();
-	outb(0xe0, 0x80);
-	sio_putstring("KONSKY\nKROKOT");
-//	outb(0x0e, 0xcf9);
 
 	const char* target1 = "fallback/romstage";
 	unsigned long entry;
