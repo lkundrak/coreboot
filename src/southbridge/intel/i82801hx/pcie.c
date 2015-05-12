@@ -112,14 +112,14 @@ static struct device_operations device_ops = {
 	.ops_pci		= &pci_ops,
 };
 
-/* 82801Hx (ICH9DH/ICH9DO/ICH9R/ICH9/ICH9M-E/ICH9M) */
+/* 82801Hx (ICH8R/ICH8M-E/ICH8DH/ICH8DO/ICH8M) */
 static const unsigned short pci_device_ids[] = {
-	0x2940, /* Port 1 */
-	0x2942, /* Port 2 */
-	0x2944, /* Port 3 */
-	0x2946, /* Port 4 */
-	0x2948, /* Port 5 */
-	0x294a, /* Port 6 */
+	0x293f, /* Port 1 */
+	0x2941, /* Port 2 */
+	0x2943, /* Port 3 */
+	0x2945, /* Port 4 */
+	0x2947, /* Port 5 */
+	0x2949, /* Port 6 */
 	0
 };
 static const struct pci_driver ich9_pcie __pci_driver = {

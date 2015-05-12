@@ -224,7 +224,7 @@
 
 static inline int lpc_is_mobile(const u16 devid)
 {
-	return (devid == 0x2917) || (devid == 0x2919);
+	return (devid == 0x2811) || (devid == 0x2815);
 }
 #define LPC_IS_MOBILE(dev) lpc_is_mobile(pci_read_config16(dev, PCI_DEVICE_ID))
 

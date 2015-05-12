@@ -281,8 +281,16 @@ static struct device_operations sata_ops = {
 };
 
 static const unsigned short pci_device_ids[] = {
-	0x2920, 0x2921, 0x2922, 0x2923,
-	0x2928, 0x2929,
+	/* D31:F2 */
+	0x2820, /* Desktop Non-AHCI and Non-RAID Mode 1   */
+	0x2821, /* Desktop AHCI Mode supporting 6 ports 1 */
+	0x2822, /* Desktop RAID 0/1/5 Mode 1              */
+	0x2824, /* Desktop AHCI Mode supporting 4 ports 1 */
+	0x2828, /* Mobile Non-AHCI and Non-RAID Mode 1    */
+	0x2829, /* Mobile AHCI Mode                       */
+	0x282a, /* Mobile RAID 0/1 Mode 1                 */
+	/* D31:F5 */
+	0x2825, /* Desktop Non-AHCI and Non-RAID Mode 1   */
 	0,
 };
 

@@ -107,7 +107,7 @@ static struct device_operations smbus_ops = {
 	.ops_pci		= &smbus_pci_ops,
 };
 
-static const unsigned short pci_device_ids[] = { 0x2930, 0 };
+static const unsigned short pci_device_ids[] = { 0x283e, 0 };
 
 static const struct pci_driver pch_smbus __pci_driver = {
 	.ops	 = &smbus_ops,
