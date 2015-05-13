@@ -129,8 +129,6 @@ void i82801hx_dmi_poll_vc1(void)
 	if (((RCBA16(RCBA_LSTS) >> 4) & 0x3f) == 2) {
 		printk(BIOS_DEBUG, "x2 DMI link detected.\n");
 		RCBA32(RCBA_CIR6) = (RCBA32(RCBA_CIR6) & ~(7 << 21)) | (3 << 21);
-		RCBA16(RCBA_CIR11) |= (1 << 15);
-		RCBA16(RCBA_CIR12) |= (1 << 15);
 		/* TODO: Maybe we have to save and
 		         restore these settings across S3. */
 	}

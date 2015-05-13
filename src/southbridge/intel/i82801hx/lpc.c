@@ -362,9 +362,6 @@ static void enable_clock_gating(void)
 	reg32 |= (1 << 4) | (1 << 3) | (1 << 2) | (1 << 1);
 	reg32 |= (1 << 0);	/* PCIe root port static clock gating */
 	RCBA32(RCBA_CG) = reg32;
-
-	/* Enable SPI dynamic clock gating. */
-	RCBA32(0x38c0) |= 7;
 }
 
 #if CONFIG_HAVE_SMI_HANDLER

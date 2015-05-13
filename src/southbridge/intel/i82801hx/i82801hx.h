@@ -171,7 +171,6 @@
 #define RCBA_BCR		0x0220
 #define RCBA_DMIC		0x0234
 #define RCBA_RPFN		0x0238
-#define RCBA_CIR13		0x0f20
 #define RCBA_TRSR		0x1e00
 #define RCBA_TRCR		0x1e10
 #define RCBA_TWDR		0x1e18
@@ -179,8 +178,6 @@
 #define RCBA_DMC		0x2010
 #define RCBA_CIR6		0x2024
 #define RCBA_CIR7		0x2034
-#define RCBA_CIR11		0x20c4
-#define RCBA_CIR12		0x20e4
 #define RCBA_OIC		0x31ff
 #define RCBA_RC			0x3400
 #define RCBA_HPTC		0x3404
@@ -192,13 +189,11 @@
 #define RCBA_CIR8		0x3430
 #define RCBA_CIR9		0x350c
 #define RCBA_MAP		0x35f0 /* UHCI cotroller #6 remapping */
-#define RCBA_CIR10		0x352c
 
 #define SPIBAR			0x3020
 #define SPI_HSFC		(SPIBAR + 0x06)
 #define SPI_SSFC		(SPIBAR + 0x91)
 
-#define BUC_LAND	(1 <<  5) /* LAN */
 #define FD_SAD2		(1 << 25) /* SATA #2 */
 #define FD_TTD		(1 << 24) /* Thermal Throttle */
 #define FD_PE6D		(1 << 21) /* PCIe root port 6 */
@@ -215,7 +210,6 @@
 #define FD_U3D		(1 << 10) /* UHCI #3 */
 #define FD_U2D		(1 <<  9) /* UHCI #2 */
 #define FD_U1D		(1 <<  8) /* UHCI #1 */
-#define FD_U6D		(1 <<  7) /* UHCI #6 */
 #define FD_HDAD		(1 <<  4) /* HD audio */
 #define FD_SD		(1 <<  3) /* SMBus */
 #define FD_SAD1		(1 <<  2) /* SATA #1 */

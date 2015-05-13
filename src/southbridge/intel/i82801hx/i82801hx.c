@@ -52,9 +52,7 @@ static void i82801hx_early_settings(const config_t *const info)
 	RCBA32(RCBA_FD) |= (1 << 0);
 	RCBA32(RCBA_CIR9) = (RCBA32(RCBA_CIR9) & ~(0x3 << 26)) | (0x2 << 26);
 	RCBA32(RCBA_CIR7) = (RCBA32(RCBA_CIR7) & ~(0xf << 16)) | (0x5 << 16);
-	RCBA32(RCBA_CIR13) = (RCBA32(RCBA_CIR13) & ~(0xf << 16)) | (0x5 << 16);
 	RCBA32(RCBA_CIR5) |= (1 << 0);
-	RCBA32(RCBA_CIR10) |= (3 << 16);
 }
 
 static void i82801hx_pcie_init(const config_t *const info)
@@ -163,9 +161,6 @@ static void i82801hx_hide_functions(void)
 	          some functions have to be disabled in right order and/or have
 		  other constraints. */
 
-	if (i82801hx_function_disabled(PCI_DEVFN(0x19, 0)))
-		RCBA32(RCBA_BUC) |= BUC_LAND;
-
 	reg32 = RCBA32(RCBA_FD);
 	struct {
 		int devfn;
@@ -173,7 +168,6 @@ static void i82801hx_hide_functions(void)
 	} functions[] = {
 		{ PCI_DEVFN(0x1a, 0), FD_U4D },		/* UHCI #4 */
 		{ PCI_DEVFN(0x1a, 1), FD_U5D },		/* UHCI #5 */
-		{ PCI_DEVFN(0x1a, 2), FD_U6D },		/* UHCI #6 */
 		{ PCI_DEVFN(0x1a, 7), FD_EHCI2D },	/* EHCI #2 */
 		{ PCI_DEVFN(0x1b, 0), FD_HDAD },	/* HD Audio */
 		{ PCI_DEVFN(0x1c, 0), FD_PE1D },	/* PCIe #1 */
