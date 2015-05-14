@@ -50,12 +50,12 @@ void i82801hx_dmi_setup(void)
 
 	RCBA32(RCBA_V1CAP) = (RCBA32(RCBA_V1CAP) & ~(0x7f<<16)) | (0x12<<16);
 
+	/* "BIOS must set this..." */
 	RCBA32(RCBA_CIR1) = 0x00109000;
 	RCBA16(RCBA_CIR3) = 0x060b;
 	RCBA32(RCBA_CIR2) = 0x86000040;
 	RCBA8 (RCBA_BCR) = 0x45;
 	RCBA32(RCBA_CIR6) &= ~(1 << 7);
-
 
 	/* VC1 setup for isochronous transfers: */
 
@@ -126,7 +126,7 @@ void i82801hx_dmi_poll_vc1(void)
 		printk(BIOS_DEBUG, "done.\n");
 
 	/* Check for x2 DMI link. */
-	if (((RCBA16(RCBA_LSTS) >> 4) & 0x3f) == 2) {
+	if (((RCBA16(RCBA_LSTS) >> 4) & 0x3f) == 2) { /* negotiated link width. 010b = x2, 100b = x4 */
 		printk(BIOS_DEBUG, "x2 DMI link detected.\n");
 		RCBA32(RCBA_CIR6) = (RCBA32(RCBA_CIR6) & ~(7 << 21)) | (3 << 21);
 		/* TODO: Maybe we have to save and

@@ -29,13 +29,14 @@
 
 #define DEFAULT_TBAR		0xfed1b000
 #define DEFAULT_RCBA		0xfed1c000
-#define DEFAULT_PMBASE		0x00000500 /* Speedstep code has this hardcoded, too. */
+#define DEFAULT_PMBASE		0x00000500 /* Speedstep code has this hardcoded, too. */ /* x61 has 0x1000 */
 #define DEFAULT_TCOBASE		(DEFAULT_PMBASE + 0x60)
-#define DEFAULT_GPIOBASE	0x00000580
+#define DEFAULT_GPIOBASE	0x00000580	/* ich7 has 0x480, x61 has 0x1180 */
 
 
 #define APM_CNT		0xb2
 
+/* PMBASE + */
 #define PM1_STS		0x00
 #define   PWRBTN_STS	(1 <<  8)
 #define   RTC_STS	(1 << 10)
@@ -77,7 +78,7 @@
 #define D31F0_PMBASE		0x40
 #define D31F0_ACPI_CNTL		0x44
 #define D31F0_GPIO_BASE		0x48
-#define D31F0_GPIO_CNTL		0x4c
+#define D31F0_GPIO_CNTL		0x4c /* called GC */
 #define D31F0_PIRQA_ROUT	0x60
 #define D31F0_PIRQB_ROUT	0x61
 #define D31F0_PIRQC_ROUT	0x62
@@ -102,16 +103,16 @@
 #define D31F0_RCBA		0xf0
 
 /* GEN_PMCON_3 bits */
-#define RTC_BATTERY_DEAD	(1 << 2)
-#define RTC_POWER_FAILED	(1 << 1)
-#define SLEEP_AFTER_POWER_FAIL	(1 << 0)
+#define RTC_BATTERY_DEAD	(1 << 2)	/* RTC_POWER_STS */
+#define RTC_POWER_FAILED	(1 << 1)	/* PWR_FLR */
+#define SLEEP_AFTER_POWER_FAIL	(1 << 0)	/* AFTERG3_EN */
 
 
 /* D31:F2 SATA */
 #define D31F2_IDE_TIM_PRI	0x40
 #define D31F2_IDE_TIM_SEC	0x42
-#define D31F2_SIDX		0xa0
-#define D31F2_SDAT		0xa4
+#define D31F2_SIDX		0xa0	// called SIRI on ich8. Undefined on ich9???
+#define D31F2_SDAT		0xa4	// called SDAT in ich8. Undefined on ich9?
 
 
 /* D30:F0 PCI-to-PCI bridge */
@@ -135,15 +136,15 @@
 #define HST_EN			(1 << 0)
 
 /* SMBus I/O bits. */
-#define SMBHSTSTAT		0x0
-#define SMBHSTCTL		0x2
-#define SMBHSTCMD		0x3
-#define SMBXMITADD		0x4
-#define SMBHSTDAT0		0x5
-#define SMBHSTDAT1		0x6
-#define SMBBLKDAT		0x7
-#define SMBTRNSADD		0x9
-#define SMBSLVDATA		0xa
+#define SMBHSTSTAT		0x0	/* called HST_STS */
+#define SMBHSTCTL		0x2	/* HST_CNT */
+#define SMBHSTCMD		0x3	/* HST_CMD */
+#define SMBXMITADD		0x4	/* XMIT_SLVA */
+#define SMBHSTDAT0		0x5	/* HST_D0 */
+#define SMBHSTDAT1		0x6	/* HST_D1 */
+#define SMBBLKDAT		0x7	/* HOST_BLOCK_DB */
+#define SMBTRNSADD		0x9	/* RCV_SLVA */
+#define SMBSLVDATA		0xa	/* SLV_DATA */
 #define SMLINK_PIN_CTL		0xe
 #define SMBUS_PIN_CTL		0xf
 
@@ -166,7 +167,7 @@
 #define RCBA_LCAP		0x01a4
 #define RCBA_LCTL		0x01a8
 #define RCBA_LSTS		0x01aa
-#define RCBA_CIR2		0x01f4
+#define RCBA_CIR2		0x01f4 /* Missing from Table 103. */
 #define RCBA_CIR3		0x01fc
 #define RCBA_BCR		0x0220
 #define RCBA_DMIC		0x0234
@@ -190,7 +191,7 @@
 #define RCBA_CIR9		0x350c
 #define RCBA_MAP		0x35f0 /* UHCI cotroller #6 remapping */
 
-#define SPIBAR			0x3020
+#define SPIBAR			0x3020 /* -- 30ff  page 747 */
 #define SPI_HSFC		(SPIBAR + 0x06)
 #define SPI_SSFC		(SPIBAR + 0x91)
 
