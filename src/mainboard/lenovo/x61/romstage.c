@@ -290,6 +290,9 @@ void main(unsigned long bist)
 #endif
 	}
 
+        enable_smbus();
+        dump_spd_registers();
+
 	/* RAM initialization */
 	enter_raminit_or_reset();
 	memset(&sysinfo, 0, sizeof(sysinfo));
