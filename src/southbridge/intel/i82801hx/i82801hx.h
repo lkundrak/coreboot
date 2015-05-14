@@ -49,7 +49,7 @@
 #define PM_LV4		0x16
 #define PM_LV5		0x17
 #define PM_LV6		0x18
-#define GPE0_STS	0x20
+#define GPE0_STS	0x28
 #define SMI_EN		0x30
 #define   PERIODIC_EN	(1 << 14)
 #define   TCO_EN	(1 << 13)
@@ -194,7 +194,7 @@
 #define RCBA_MAP		0x35f0 /* UHCI cotroller #6 remapping */
 #define RCBA_CIR10		0x352c
 
-#define SPIBAR			0x3800
+#define SPIBAR			0x3020
 #define SPI_HSFC		(SPIBAR + 0x06)
 #define SPI_SSFC		(SPIBAR + 0x91)
 
