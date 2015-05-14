@@ -429,6 +429,13 @@ u32 decode_igd_memory_size(u32 gms);
 u32 decode_igd_gtt_size(u32 gsm);
 
 void init_iommu(void);
+
+/* debugging functions */
+void print_pci_devices(void);
+void dump_pci_device(unsigned dev);
+void dump_pci_devices(void);
+void dump_spd_registers(void);
+void dump_mem(unsigned start, unsigned end);
 #endif
 
 #endif

@@ -24,7 +24,7 @@
 #include <arch/io.h>
 #include <device/pci_def.h>
 #include <console/console.h>
-#include "i945.h"
+#include "i965.h"
 
 void print_pci_devices(void)
 {

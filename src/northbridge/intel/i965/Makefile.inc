@@ -30,6 +30,7 @@ romstage-y += igd.c
 romstage-y += pm.c
 romstage-y += ram_calc.c
 romstage-$(CONFIG_IOMMU) += iommu.c
+romstage-y += debug.c
 
 ramstage-$(CONFIG_GENERATE_ACPI_TABLES) += acpi.c
 

@@ -38,10 +38,6 @@
 #include <delay.h>
 #include "dock.h"
 
-// DEBUG
-#include <device/pci_def.h>
-#include "lib/debug.c"
-
 #define LPC_DEV PCI_DEV(0, 0x1f, 0)
 #define MCH_DEV PCI_DEV(0, 0, 0)
 
