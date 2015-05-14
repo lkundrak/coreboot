@@ -47,9 +47,9 @@ static void i82801ix_enable_apic(struct device *dev)
 	volatile u32 *ioapic_data = (volatile u32 *)(IO_APIC_ADDR + 0x10);
 
 	/* Enable IOAPIC. Keep APIC Range Select at zero. */
-	RCBA8(0x31ff) = 0x03;
-	/* We have to read 0x31ff back if bit0 changed. */
-	RCBA8(0x31ff);
+	RCBA8(RCBA_OIC) = 0x03;
+	/* We have to read OIC back if bit0 changed. */
+	RCBA8(RCBA_OIC);
 
 	/* Lock maximum redirection entries (MRE), R/WO register. */
 	*ioapic_index	= 0x01;

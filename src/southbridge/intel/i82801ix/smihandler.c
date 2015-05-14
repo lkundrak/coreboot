@@ -382,10 +382,10 @@ static void southbridge_smi_monitor(unsigned int node, smm_state_save_area_t *st
 	u32 data, mask = 0;
 	int i;
 
-	trap_sts = RCBA32(0x1e00); // TRSR - Trap Status Register
-	RCBA32(0x1e00) = trap_sts; // Clear trap(s) in TRSR
+	trap_sts = RCBA32(RCBA_TRSR); // Trap Status Register
+	RCBA32(RCBA_TRSR) = trap_sts; // Clear trap(s) in TRSR
 
-	trap_cycle = RCBA32(0x1e10);
+	trap_cycle = RCBA32(RCBA_TRCR);
 	for (i=16; i<20; i++) {
 		if (trap_cycle & (1 << i))
 			mask |= (0xff << ((i - 16) << 3));
@@ -406,7 +406,7 @@ static void southbridge_smi_monitor(unsigned int node, smm_state_save_area_t *st
 	if (IOTRAP(0)) {
 		if (!(trap_cycle & (1 << 24))) { // It's a write
 			printk(BIOS_DEBUG, "SMI1 command\n");
-			data = RCBA32(0x1e18);
+			data = RCBA32(RCBA_TWDR);
 			data &= mask;
 			// if (smi1)
 			// 	southbridge_smi_command(data);
@@ -423,7 +423,7 @@ static void southbridge_smi_monitor(unsigned int node, smm_state_save_area_t *st
 
 	if (!(trap_cycle & (1 << 24))) {
 		/* Write Cycle */
-		data = RCBA32(0x1e18);
+		data = RCBA32(RCBA_TWDR);
 		printk(BIOS_DEBUG, "  iotrap written data = 0x%08x\n", data);
 	}
 #undef IOTRAP
@@ -482,8 +482,8 @@ static u32 southbrigde_smi_mask_events(u32 smi_sts)
 		smi_sts &= ~((1 << 8) | (1 << 9));
 
 	/* Check if SPI generates SMI. */
-	if (!(RCBA16(0x3806) & (1 << 15)) &&
-			!(RCBA16(0x3891) & (1 << 15)))
+	if (!(RCBA16(SPI_HSFC) & (1 << 15)) &&
+			!(RCBA16(SPI_SSFC) & (1 << 15)))
 		/* Clear SPI. */
 		smi_sts &= ~(1 << 26);
 

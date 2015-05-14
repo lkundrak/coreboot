@@ -50,11 +50,11 @@ void i82801ix_dmi_setup(void)
 
 	RCBA32(RCBA_V1CAP) = (RCBA32(RCBA_V1CAP) & ~(0x7f<<16)) | (0x12<<16);
 
-	RCBA32(0x0088) = 0x00109000;
-	RCBA16(0x01fc) = 0x060b;
-	RCBA32(0x01f4) = 0x86000040;
-	RCBA8 (0x0220) = 0x45;
-	RCBA32(0x2024) &= ~(1 << 7);
+	RCBA32(RCBA_CIR1) = 0x00109000;
+	RCBA16(RCBA_CIR3) = 0x060b;
+	RCBA32(RCBA_CIR2) = 0x86000040;
+	RCBA8 (RCBA_BCR) = 0x45;
+	RCBA32(RCBA_CIR6) &= ~(1 << 7);
 
 
 	/* VC1 setup for isochronous transfers: */
@@ -128,9 +128,9 @@ void i82801ix_dmi_poll_vc1(void)
 	/* Check for x2 DMI link. */
 	if (((RCBA16(RCBA_LSTS) >> 4) & 0x3f) == 2) {
 		printk(BIOS_DEBUG, "x2 DMI link detected.\n");
-		RCBA32(0x2024) = (RCBA32(0x2024) & ~(7 << 21)) | (3 << 21);
-		RCBA16(0x20c4) |= (1 << 15);
-		RCBA16(0x20e4) |= (1 << 15);
+		RCBA32(RCBA_CIR6) = (RCBA32(RCBA_CIR6) & ~(7 << 21)) | (3 << 21);
+		RCBA16(RCBA_CIR11) |= (1 << 15);
+		RCBA16(RCBA_CIR12) |= (1 << 15);
 		/* TODO: Maybe we have to save and
 		         restore these settings across S3. */
 	}

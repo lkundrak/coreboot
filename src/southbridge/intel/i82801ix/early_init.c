@@ -44,7 +44,7 @@ void i82801ix_early_init(void)
 	outw(0x0002, DEFAULT_TCOBASE + 0x06); /* R/WC, clear second timeout. */
 
 	/* Enable upper 128bytes of CMOS. */
-	RCBA32(0x3400) = (1 << 2);
+	RCBA32(RCBA_RC) = (1 << 2);
 
 	/* Initialize power manangement initialization
 	   register early as it affects reboot behavior. */

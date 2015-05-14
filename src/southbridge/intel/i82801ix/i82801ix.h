@@ -163,6 +163,7 @@
 #define RCBA16(x) *((volatile u16 *)(DEFAULT_RCBA + x))
 #define RCBA32(x) *((volatile u32 *)(DEFAULT_RCBA + x))
 
+#define RCBA_CIR1		0x0088
 #define RCBA_V0CTL		0x0014
 #define RCBA_V1CAP		0x001c
 #define RCBA_V1CTL		0x0020
@@ -174,15 +175,37 @@
 #define RCBA_LCAP		0x01a4
 #define RCBA_LCTL		0x01a8
 #define RCBA_LSTS		0x01aa
+#define RCBA_CIR2		0x01f4
+#define RCBA_CIR3		0x01fc
+#define RCBA_BCR		0x0220
 #define RCBA_DMIC		0x0234
 #define RCBA_RPFN		0x0238
+#define RCBA_CIR13		0x0f20
+#define RCBA_TRSR		0x1e00
+#define RCBA_TRCR		0x1e10
+#define RCBA_TWDR		0x1e18
+#define RCBA_CIR5		0x1d40
 #define RCBA_DMC		0x2010
+#define RCBA_CIR6		0x2024
+#define RCBA_CIR7		0x2034
+#define RCBA_CIR11		0x20c4
+#define RCBA_CIR12		0x20e4
+#define RCBA_OIC		0x31ff
+#define RCBA_RC			0x3400
 #define RCBA_HPTC		0x3404
+#define RCBA_GCS		0x3410
 #define RCBA_BUC		0x3414
 #define RCBA_FD			0x3418 /* Function Disable, see below. */
 #define RCBA_CG			0x341c
 #define RCBA_FDSW		0x3420
+#define RCBA_CIR8		0x3430
+#define RCBA_CIR9		0x350c
 #define RCBA_MAP		0x35f0 /* UHCI cotroller #6 remapping */
+#define RCBA_CIR10		0x352c
+
+#define SPIBAR			0x3800
+#define SPI_HSFC		(SPIBAR + 0x06)
+#define SPI_SSFC		(SPIBAR + 0x91)
 
 #define BUC_LAND	(1 <<  5) /* LAN */
 #define FD_SAD2		(1 << 25) /* SATA #2 */

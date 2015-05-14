@@ -34,7 +34,7 @@ void enable_smbus(void)
 	dev = PCI_DEV(0x0, 0x1f, 0x3);
 
 	/* Check to make sure we've got the right device. */
-	if (pci_read_config16(dev, 0x2) != 0x2930) {
+	if (pci_read_config16(dev, PCI_DEVICE_ID) != 0x2930) {
 		die("SMBus controller not found!");
 	}
 
