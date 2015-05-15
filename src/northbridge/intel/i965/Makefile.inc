@@ -20,6 +20,7 @@
 romstage-y += early_init.c
 romstage-y += early_reset.c
 #romstage-y += delay.c
+romstage-y += raminit.c
 romstage-y += pcie.c
 romstage-y += thermal.c
 #romstage-y += igd.c

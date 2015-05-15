@@ -33,9 +33,9 @@
 #include <console/console.h>
 #include "southbridge/intel/i82801hx/i82801hx.h"
 #include "northbridge/intel/i965/i965.h"
+#include "northbridge/intel/i965/raminit.h"
 
 #include <device/pnp_def.h>
-#include <delay.h>
 #include "dock.h"
 
 #define LPC_DEV PCI_DEV(0, 0x1f, 0)
@@ -219,10 +219,10 @@ static void early_superio_config(void)
 void main(unsigned long bist)
 {
 //	sysinfo_t sysinfo;
-	int s3resume = 0;
+	int boot_mode = 0;
 	int cbmem_initted;
 	u16 reg16;
-
+	const u8 spd_addrmap[2 * DIMM_SOCKETS] = { 0x50, 0x52, 0x51, 0x53 };
 
 #if 0 /* nic take ako 0x1c.3 neni? */
 	/* Enable expresscard hotplug events.  */
@@ -276,7 +276,7 @@ void main(unsigned long bist)
 	if (((pm1_cnt >> 10) & 7) == 5) {
 #if CONFIG_HAVE_ACPI_RESUME
 		printk(BIOS_DEBUG, "Resume from S3 detected.\n");
-		s3resume = 1;
+		boot_mode = 2;
 		/* Clear SLP_TYPE. This will break stage2 but
 		 * we care for that when we get there.
 		 */
@@ -289,6 +289,8 @@ void main(unsigned long bist)
         enable_smbus();
         dump_spd_registers();
 
+        sdram_initialize(boot_mode, spd_addrmap);
+
 #if 0
 	/* RAM initialization */
 	enter_raminit_or_reset();
@@ -298,7 +300,7 @@ void main(unsigned long bist)
 	sysinfo.enable_igd = 1;
 	sysinfo.enable_peg = 0;
 	get_gmch_info(&sysinfo);
-	raminit(&sysinfo, s3resume);
+	raminit(&sysinfo, boot_mode == 2);
 #endif
 
 	const u32 deven = pci_read_config32(MCH_DEV, D0F0_DEVEN);
@@ -325,12 +327,12 @@ void main(unsigned long bist)
 	outl(inl(DEFAULT_GPIOBASE + 0x38) & ~0x400, DEFAULT_GPIOBASE + 0x38);
 #endif
 
-	cbmem_initted = !cbmem_recovery(s3resume);
+	cbmem_initted = !cbmem_recovery(boot_mode == 2);
 #if CONFIG_HAVE_ACPI_RESUME
 	/* If there is no high memory area, we didn't boot before, so
 	 * this is not a resume. In that case we just create the cbmem toc.
 	 */
-	if (s3resume && cbmem_initted) {
+	if ((boot_mode == 2) && cbmem_initted) {
 		void *resume_backup_memory = cbmem_find(CBMEM_ID_RESUME);
 
 		/* copy 1MB - 64K to high tables ram_base to prevent memory corruption
