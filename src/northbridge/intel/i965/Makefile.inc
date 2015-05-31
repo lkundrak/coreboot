@@ -19,7 +19,7 @@
 
 romstage-y += early_init.c
 romstage-y += early_reset.c
-romstage-y += delay.c
+#romstage-y += delay.c
 romstage-y += raminit.c
 romstage-y += raminit_rcomp_calibration.c
 romstage-y += raminit_receive_enable_calibration.c
@@ -31,6 +31,7 @@ romstage-y += pm.c
 romstage-y += ram_calc.c
 romstage-$(CONFIG_IOMMU) += iommu.c
 romstage-y += debug.c
+romstage-y += ddr3.c
 
 ramstage-$(CONFIG_GENERATE_ACPI_TABLES) += acpi.c
 

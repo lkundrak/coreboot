@@ -296,7 +296,7 @@ void main(unsigned long bist)
 	sysinfo.spd_map[2] = 0x51;
 	sysinfo.enable_igd = 1;
 	sysinfo.enable_peg = 0;
-	get_gmch_info(&sysinfo);
+//	get_gmch_info(&sysinfo);
 	raminit(&sysinfo, s3resume);
 
 	const u32 deven = pci_read_config32(MCH_DEV, D0F0_DEVEN);
