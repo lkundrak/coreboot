@@ -294,7 +294,11 @@ void main(unsigned long bist)
 	memset(&sysinfo, 0, sizeof(sysinfo));
 	sysinfo.spd_map[0] = 0x50;
 	sysinfo.spd_map[2] = 0x51;
-	sysinfo.enable_igd = 1;
+
+//	sysinfo.spd_map[1] = 0x52;
+//	sysinfo.spd_map[3] = 0x53;
+//	sysinfo.enable_igd = 1;
+	sysinfo.enable_igd = 0;
 	sysinfo.enable_peg = 0;
 //	get_gmch_info(&sysinfo);
 	raminit(&sysinfo, s3resume);

@@ -148,7 +148,7 @@ void init_pm(const sysinfo_t *const sysinfo, int do_freq_scaling_cfg)
 {
 	const stepping_t stepping = sysinfo->stepping;
 	const fsb_clock_t fsb = sysinfo->selected_timings.fsb_clock;
-	const mem_clock_t memclk = sysinfo->selected_timings.mem_clock;
+//	const mem_clock_t memclk = sysinfo->selected_timings.mem_clock;
 
 	MCHBAR16(0xc14) = 0;
 	MCHBAR16(0xc20) = 0;
@@ -288,7 +288,10 @@ void init_pm(const sysinfo_t *const sysinfo, int do_freq_scaling_cfg)
 		init_freq_scaling(sysinfo->gfx_type,
 				  sysinfo->gs45_low_power_mode);
 
+#if 0
+// DDR2 only?
 	/* This has to be the last write to CLKCFG. */
 	if ((fsb == FSB_CLOCK_1067MHz) && (memclk == MEM_CLOCK_667MT))
 		MCHBAR32(CLKCFG_MCHBAR) &= ~(1 << 17);
+#endif
 }

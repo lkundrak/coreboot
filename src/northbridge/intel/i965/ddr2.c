@@ -17,6 +17,7 @@
 #define BURSTLENGTH	 8
 
 struct sys_info {
+#if 0
 	u16 memory_frequency;	/* 400, 533 or 667 */
 	u16 fsb_frequency;	/* 400, 533 or 667 */
 
@@ -27,10 +28,13 @@ struct sys_info {
 	u8 twr;			/* calculated by sdram_detect_smallest_tWR() */
 
 	u8 cas;			/* 3, 4 or 5 */
+#endif
 	u8 refresh;		/* 0 = 15.6us, 1 = 7.8us */
 
+#if 0
 	u8 dual_channel;	/* 0 or 1 */
 	u8 interleaved;
+#endif
 
 	u8 mvco4x;		/* 0 (8x) or 1 (4x) */
 	u8 clkcfg_bit7;
@@ -49,21 +53,18 @@ struct sys_info {
 #define SYSINFO_DIMM_X8DDS		0x03
 #define SYSINFO_DIMM_NOT_POPULATED	0x04
 
-	u8 banks[2 * DIMM_SOCKETS];
+//	u8 banks[2 * DIMM_SOCKETS];
 
 	u8 banksize[2 * 2 * DIMM_SOCKETS];
-	const u8 *spd_addresses;
+//	const u8 *spd_addresses;
+	sysinfo_t *sysinfo;
 
 } __attribute__ ((packed));
 
 void receive_enable_adjust(struct sys_info *sysinfo);
-void sdram_initialize(int boot_path, const u8 *sdram_addresses);
+void sdram_initialize(int boot_path, sysinfo_t *sysinfo965);
 int fixup_i945_errata(void);
 void udelay(u32 us);
-
-#if CONFIG_DEBUG_RAM_SETUP
-void sdram_dump_mchbar_registers(void);
-#endif
 
 /* Debugging macros. */
 #if CONFIG_DEBUG_RAM_SETUP
@@ -88,16 +89,25 @@ void sdram_dump_mchbar_registers(void);
 
 static int get_dimm_spd_address(struct sys_info *sysinfo, int device)
 {
+#if 0
 	if (sysinfo->spd_addresses)
 		return sysinfo->spd_addresses[device];
 	else
 		return DIMM0 + device;
-
+#else
+	if (sysinfo->sysinfo->spd_map)
+		return sysinfo->sysinfo->spd_map[device];
+	else
+		return DIMM0 + device;
+#endif
 }
 
 static inline int spd_read_byte(unsigned device, unsigned address)
 {
-	return smbus_read_byte(device, address);
+	int ret = smbus_read_byte(device, address);
+//	printk (BIOS_SPEW, "SPD[%x,%x] => %x\n", device, address, ret);
+	return ret;
+//	return smbus_read_byte(device, address);
 }
 
 #if 0
@@ -129,20 +139,6 @@ static void ram_read32(u32 offset)
 	read32(offset);
 }
 
-#if CONFIG_DEBUG_RAM_SETUP
-void sdram_dump_mchbar_registers(void)
-{
-	int i;
-	printk(BIOS_DEBUG, "Dumping MCHBAR Registers\n");
-
-	for (i=0; i<0xfff; i+=4) {
-		if (MCHBAR32(i) == 0)
-			continue;
-		printk(BIOS_DEBUG, "0x%04x: 0x%08x\n", i, MCHBAR32(i));
-	}
-}
-#endif
-
 static int memclk(void)
 {
 	int offset = 0;
@@ -150,9 +146,9 @@ static int memclk(void)
 	offset++;
 #endif
 	switch (((MCHBAR32(CLKCFG) >> 4) & 7) - offset) {
-	case 1: return 400;
-	case 2: return 533;
-	case 3: return 667;
+	case 1: return MEM_CLOCK_400MHz;
+	case 2: return MEM_CLOCK_533MHz;
+	case 3: return MEM_CLOCK_667MHz;
 	default: printk(BIOS_DEBUG, "memclk: unknown register value %x\n", ((MCHBAR32(CLKCFG) >> 4) & 7) - offset);
 	}
 	return -1;
@@ -162,9 +158,9 @@ static int memclk(void)
 static u16 fsbclk(void)
 {
 	switch (MCHBAR32(CLKCFG) & 7) {
-	case 0: return 400;
-	case 1: return 533;
-	case 3: return 667;
+	case 0: return FSB_CLOCK_400MHz;
+	case 1: return FSB_CLOCK_533MHz;
+	case 3: return FSB_CLOCK_667MHz;
 	default: printk(BIOS_DEBUG, "fsbclk: unknown register value %x\n", MCHBAR32(CLKCFG) & 7);
 	}
 	return 0xffff;
@@ -173,9 +169,9 @@ static u16 fsbclk(void)
 static u16 fsbclk(void)
 {
 	switch (MCHBAR32(CLKCFG) & 7) {
-	case 0: return 1066;
-	case 1: return 533;
-	case 2: return 800;
+	case 0: return FSB_CLOCK_1067MHz;
+	case 1: return FSB_CLOCK_533MHz;
+	case 2: return FSB_CLOCK_800MHz;
 	default: printk(BIOS_DEBUG, "fsbclk: unknown register value %x\n", MCHBAR32(CLKCFG) & 7);
 	}
 	return 0xffff;
@@ -185,13 +181,13 @@ static u16 fsbclk(void)
 
 #if 0
 #else
-static u16 fsbclk(void)
+static fsb_clock_t fsbclk(void)
 {
-	return 667;
+	return FSB_CLOCK_800MHz;
 }
 #endif
 
-static int sdram_capabilities_max_supported_memory_frequency(void)
+static mem_clock_t sdram_capabilities_max_supported_memory_frequency(void)
 {
 	u32 reg32;
 
@@ -200,21 +196,19 @@ static int sdram_capabilities_max_supported_memory_frequency(void)
 #endif
 
 	reg32 = pci_read_config32(PCI_DEV(0, 0x00, 0), 0xe4); /* CAPID0 + 4 */
-	reg32 &= (7 << 0);
+	reg32 = (reg32 >> 31) & 1;
 
 	switch (reg32) {
-	case 4: return 400;
-	case 3: return 533;
-	case 2: return 667;
+	case 0: return MEM_CLOCK_533MHz;
+	case 1: return MEM_CLOCK_667MHz;
 	}
 	/* Newer revisions of this chipset rather support faster memory clocks,
 	 * so if it's a reserved value, return the fastest memory clock that we
 	 * know of and can handle
 	 */
-	return 667;
+	return MEM_CLOCK_667MHz;
 }
 
-#if 0
 /**
  * @brief determine whether chipset is capable of dual channel interleaved mode
  *
@@ -230,7 +224,6 @@ static int sdram_capabilities_interleave(void)
 
 	return (!reg32);
 }
-#endif
 
 /**
  * @brief determine whether chipset is capable of two memory channels
@@ -384,27 +377,6 @@ static void sdram_get_dram_configuration(struct sys_info *sysinfo)
 	int i;
 
 	/**
-	 * i945 supports two DIMMs, in two configurations:
-	 *
-	 * - single channel with two DIMMs
-	 * - dual channel with one DIMM per channel
-	 *
-	 * In practice dual channel mainboards have their SPD at 0x50/0x52
-	 * whereas single channel configurations have their SPD at 0x50/0x51.
-	 *
-	 * The capability register knows a lot about the channel configuration
-	 * but for now we stick with the information we gather via SPD.
-	 */
-
-	if (sdram_capabilities_dual_channel()) {
-		sysinfo->dual_channel = 1;
-		printk(BIOS_DEBUG, "This mainboard supports Dual Channel Operation.\n");
-	} else {
-		sysinfo->dual_channel = 0;
-		printk(BIOS_DEBUG, "This mainboard supports only Single Channel Operation.\n");
-	}
-
-	/**
 	 * Since we only support two DIMMs in total, there is a limited number
 	 * of combinations. This function returns the type of DIMMs.
 	 * return value:
@@ -441,6 +413,9 @@ static void sdram_get_dram_configuration(struct sys_info *sysinfo)
 		printk(BIOS_DEBUG, "DDR II Channel %d Socket %d: ", (i >> 1), (i & 1));
 
 		if (spd_read_byte(device, SPD_MEMORY_TYPE) != SPD_MEMORY_TYPE_SDRAM_DDR2) {
+
+printk (BIOS_DEBUG, ">>> %d %x %x <<<\n", i, device, spd_read_byte(device, SPD_MEMORY_TYPE));
+
 			printk(BIOS_DEBUG, "N/A\n");
 			continue;
 		}
@@ -455,8 +430,13 @@ static void sdram_get_dram_configuration(struct sys_info *sysinfo)
 		if (reg8 & MODULE_REGISTERED)
 			die("Error: Registered memory not supported by this chipset\n");
 
+// FFF ranks
+sysinfo->sysinfo->dimms[i / 2].ranks = (spd_read_byte(device, SPD_NUM_DIMM_BANKS) & 0x07) + 1;
+
 		switch (spd_read_byte(device, SPD_PRIMARY_SDRAM_WIDTH)) {
 		case 0x08:
+// FFF width
+sysinfo->sysinfo->dimms[i / 2].chip_width = CHIP_WIDTH_x8;
 			switch (spd_read_byte(device, SPD_NUM_DIMM_BANKS) & 0x0f) {
 			case 1:
 				printk(BIOS_DEBUG, "x8DDS\n");
@@ -471,6 +451,8 @@ static void sdram_get_dram_configuration(struct sys_info *sysinfo)
 			}
 			break;
 		case 0x10:
+// FFF width
+sysinfo->sysinfo->dimms[i / 2].chip_width = CHIP_WIDTH_x16;
 			switch (spd_read_byte(device, SPD_NUM_DIMM_BANKS) & 0x0f) {
 			case 1:
 				printk(BIOS_DEBUG, "x16DS\n");
@@ -492,11 +474,47 @@ static void sdram_get_dram_configuration(struct sys_info *sysinfo)
 	}
 
 	if (!dimm_mask) {
+printk(BIOS_SPEW, ">10> %x %x %x %x\n", sysinfo->sysinfo->spd_map[0], sysinfo->sysinfo->spd_map[1], sysinfo->sysinfo->spd_map[2], sysinfo->sysinfo->spd_map[3]);
+
 		die("No memory installed.\n");
 	}
 
 	if (!(dimm_mask & ((1 << DIMM_SOCKETS) - 1))) {
 		printk(BIOS_INFO, "Channel 0 has no memory populated.\n");
+	}
+}
+
+static void sdram_get_dram_channel_mode(struct sys_info *sysinfo)
+{
+	/**
+	 * i945 supports two DIMMs, in two configurations:
+	 *
+	 * - single channel with two DIMMs
+	 * - dual channel with one DIMM per channel
+	 *
+	 * In practice dual channel mainboards have their SPD at 0x50/0x52
+	 * whereas single channel configurations have their SPD at 0x50/0x51.
+	 *
+	 * The capability register knows a lot about the channel configuration
+	 * but for now we stick with the information we gather via SPD.
+	 */
+
+	if (sdram_capabilities_dual_channel()) {
+		if (sdram_capabilities_interleave() &&
+			    ( ( sysinfo->banksize[0] + sysinfo->banksize[1] +
+				sysinfo->banksize[2] + sysinfo->banksize[3] ) ==
+			      ( sysinfo->banksize[4] + sysinfo->banksize[5] +
+				sysinfo->banksize[6] + sysinfo->banksize[7] ) ) ) {
+			/* Both channels equipped with DIMMs of the same size */
+			sysinfo->sysinfo->selected_timings.channel_mode = CHANNEL_MODE_DUAL_INTERLEAVED;
+			printk(BIOS_DEBUG, "This mainboard supports Interleaved Dual Channel Operation.\n");
+		} else {
+			sysinfo->sysinfo->selected_timings.channel_mode = CHANNEL_MODE_DUAL_ASYNC;
+			printk(BIOS_DEBUG, "This mainboard supports Async Dual Channel Operation.\n");
+		}
+	} else {
+		sysinfo->sysinfo->selected_timings.channel_mode = CHANNEL_MODE_SINGLE;
+		printk(BIOS_DEBUG, "This mainboard supports only Single Channel Operation.\n");
 	}
 }
 
@@ -563,16 +581,17 @@ static void sdram_detect_cas_latency_and_ram_speed(struct sys_info * sysinfo, u8
 	};
 
 	switch (sdram_capabilities_max_supported_memory_frequency()) {
-	case 400: max_ram_speed = 0; break;
-	case 533: max_ram_speed = 1; break;
-	case 667: max_ram_speed = 2; break;
+	case MEM_CLOCK_400MHz: max_ram_speed = 0; break;
+	case MEM_CLOCK_533MHz: max_ram_speed = 1; break;
+	case MEM_CLOCK_667MHz: max_ram_speed = 2; break;
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
 	}
 
-	if (fsbclk() == 533)
+	if (fsbclk() == FSB_CLOCK_533MHz)
 		max_ram_speed = 1;
 
-	sysinfo->memory_frequency = 0;
-	sysinfo->cas = 0;
+	sysinfo->sysinfo->selected_timings.mem_clock = -1;
+	sysinfo->sysinfo->selected_timings.CAS = 0;
 
 	if (cas_mask & SPD_CAS_LATENCY_DDR2_3) {
 		lowest_common_cas = 3;
@@ -645,24 +664,30 @@ static void sdram_detect_cas_latency_and_ram_speed(struct sys_info * sysinfo, u8
 		PRINTK_DEBUG("  freq_cas_mask for speed %d: %04x\n", j, freq_cas_mask);
 		if (freq_cas_mask) {
 			switch (j) {
-			case 0: sysinfo->memory_frequency = 400; break;
-			case 1: sysinfo->memory_frequency = 533; break;
-			case 2: sysinfo->memory_frequency = 667; break;
+			case 0: sysinfo->sysinfo->selected_timings.mem_clock = MEM_CLOCK_400MHz; break;
+			case 1: sysinfo->sysinfo->selected_timings.mem_clock = MEM_CLOCK_533MHz; break;
+			case 2: sysinfo->sysinfo->selected_timings.mem_clock = MEM_CLOCK_667MHz; break;
 			}
 			if (freq_cas_mask & SPD_CAS_LATENCY_DDR2_3) {
-				sysinfo->cas = 3;
+				sysinfo->sysinfo->selected_timings.CAS = 3;
 			} else if (freq_cas_mask & SPD_CAS_LATENCY_DDR2_4) {
-				sysinfo->cas = 4;
+				sysinfo->sysinfo->selected_timings.CAS = 4;
 			} else if (freq_cas_mask & SPD_CAS_LATENCY_DDR2_5) {
-				sysinfo->cas = 5;
+				sysinfo->sysinfo->selected_timings.CAS = 5;
 			}
 			break;
 		}
 	}
 
-	if (sysinfo->memory_frequency && sysinfo->cas) {
-		printk(BIOS_DEBUG, "Memory will be driven at %dMHz with CAS=%d clocks\n",
-				sysinfo->memory_frequency, sysinfo->cas);
+	if (sysinfo->sysinfo->selected_timings.mem_clock != -1 && sysinfo->sysinfo->selected_timings.CAS) {
+		printk(BIOS_DEBUG, "Memory will be driven at ");
+		switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+		case MEM_CLOCK_400MHz:	printk(BIOS_DEBUG, "400"); idx += 0; break;
+		case MEM_CLOCK_533MHz:	printk(BIOS_DEBUG, "533"); idx += 2; break;
+		case MEM_CLOCK_667MHz:	printk(BIOS_DEBUG, "667"); idx += 4; break;
+		case MEM_CLOCK_800MHz:	die("not there yet"); break;
+		}
+		printk(BIOS_DEBUG, "MHz with CAS=%d clocks\n", sysinfo->sysinfo->selected_timings.CAS);
 	} else {
 		die("Could not find common memory frequency and CAS\n");
 	}
@@ -675,10 +700,11 @@ static void sdram_detect_smallest_tRAS(struct sys_info * sysinfo)
 	int tRAS_cycles;
 	int freq_multiplier = 0;
 
-	switch (sysinfo->memory_frequency) {
-	case 400: freq_multiplier = 0x14; break; /* 5ns */
-	case 533: freq_multiplier = 0x0f; break; /* 3.75ns */
-	case 667: freq_multiplier = 0x0c; break; /* 3ns */
+	switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_400MHz: freq_multiplier = 0x14; break; /* 5ns */
+	case MEM_CLOCK_533MHz: freq_multiplier = 0x0f; break; /* 3.75ns */
+	case MEM_CLOCK_667MHz: freq_multiplier = 0x0c; break; /* 3ns */
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
 	}
 
 	tRAS_cycles = 4; /* 4 clocks minimum */
@@ -705,7 +731,7 @@ static void sdram_detect_smallest_tRAS(struct sys_info * sysinfo)
 	}
 
 	printk(BIOS_DEBUG, "tRAS = %d cycles\n", tRAS_cycles);
-	sysinfo->tras = tRAS_cycles;
+	sysinfo->sysinfo->selected_timings.tRAS = tRAS_cycles;
 }
 
 static void sdram_detect_smallest_tRP(struct sys_info * sysinfo)
@@ -715,10 +741,11 @@ static void sdram_detect_smallest_tRP(struct sys_info * sysinfo)
 	int tRP_cycles;
 	int freq_multiplier = 0;
 
-	switch (sysinfo->memory_frequency) {
-	case 400: freq_multiplier = 0x14; break; /* 5ns */
-	case 533: freq_multiplier = 0x0f; break; /* 3.75ns */
-	case 667: freq_multiplier = 0x0c; break; /* 3ns */
+	switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_400MHz: freq_multiplier = 0x14; break; /* 5ns */
+	case MEM_CLOCK_533MHz: freq_multiplier = 0x0f; break; /* 3.75ns */
+	case MEM_CLOCK_667MHz: freq_multiplier = 0x0c; break; /* 3ns */
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
 	}
 
 	tRP_cycles = 2; /* 2 clocks minimum */
@@ -746,7 +773,7 @@ static void sdram_detect_smallest_tRP(struct sys_info * sysinfo)
 	}
 
 	printk(BIOS_DEBUG, "tRP = %d cycles\n", tRP_cycles);
-	sysinfo->trp = tRP_cycles;
+	sysinfo->sysinfo->selected_timings.tRP = tRP_cycles;
 }
 
 static void sdram_detect_smallest_tRCD(struct sys_info * sysinfo)
@@ -756,10 +783,11 @@ static void sdram_detect_smallest_tRCD(struct sys_info * sysinfo)
 	int tRCD_cycles;
 	int freq_multiplier = 0;
 
-	switch (sysinfo->memory_frequency) {
-	case 400: freq_multiplier = 0x14; break; /* 5ns */
-	case 533: freq_multiplier = 0x0f; break; /* 3.75ns */
-	case 667: freq_multiplier = 0x0c; break; /* 3ns */
+	switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_400MHz: freq_multiplier = 0x14; break; /* 5ns */
+	case MEM_CLOCK_533MHz: freq_multiplier = 0x0f; break; /* 3.75ns */
+	case MEM_CLOCK_667MHz: freq_multiplier = 0x0c; break; /* 3ns */
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
 	}
 
 	tRCD_cycles = 2; /* 2 clocks minimum */
@@ -786,7 +814,7 @@ static void sdram_detect_smallest_tRCD(struct sys_info * sysinfo)
 	}
 
 	printk(BIOS_DEBUG, "tRCD = %d cycles\n", tRCD_cycles);
-	sysinfo->trcd = tRCD_cycles;
+	sysinfo->sysinfo->selected_timings.tRCD = tRCD_cycles;
 }
 
 static void sdram_detect_smallest_tWR(struct sys_info * sysinfo)
@@ -796,10 +824,11 @@ static void sdram_detect_smallest_tWR(struct sys_info * sysinfo)
 	int tWR_cycles;
 	int freq_multiplier = 0;
 
-	switch (sysinfo->memory_frequency) {
-	case 400: freq_multiplier = 0x14; break; /* 5ns */
-	case 533: freq_multiplier = 0x0f; break; /* 3.75ns */
-	case 667: freq_multiplier = 0x0c; break; /* 3ns */
+	switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_400MHz: freq_multiplier = 0x14; break; /* 5ns */
+	case MEM_CLOCK_533MHz: freq_multiplier = 0x0f; break; /* 3.75ns */
+	case MEM_CLOCK_667MHz: freq_multiplier = 0x0c; break; /* 3ns */
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
 	}
 
 	tWR_cycles = 2; /* 2 clocks minimum */
@@ -826,7 +855,7 @@ static void sdram_detect_smallest_tWR(struct sys_info * sysinfo)
 	}
 
 	printk(BIOS_DEBUG, "tWR = %d cycles\n", tWR_cycles);
-	sysinfo->twr = tWR_cycles;
+	sysinfo->sysinfo->selected_timings.tWR = tWR_cycles;
 }
 
 static void sdram_detect_smallest_tRFC(struct sys_info * sysinfo)
@@ -870,14 +899,15 @@ static void sdram_detect_smallest_tRFC(struct sys_info * sysinfo)
 
 	}
 	index--;
-	switch (sysinfo->memory_frequency) {
-	case 667: index += 3; /* Fallthrough */
-	case 533: index += 3; /* Fallthrough */
-	case 400: break;
+	switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
+	case MEM_CLOCK_667MHz: index += 3; /* Fallthrough */
+	case MEM_CLOCK_533MHz: index += 3; /* Fallthrough */
+	case MEM_CLOCK_400MHz: break;
 	}
 
-	sysinfo->trfc = tRFC_cycles[index];
 	printk(BIOS_DEBUG, "tRFC = %d cycles\n", tRFC_cycles[index]);
+	sysinfo->sysinfo->selected_timings.tRFC = tRFC_cycles[index];
 }
 
 static void sdram_detect_smallest_refresh(struct sys_info * sysinfo)
@@ -933,7 +963,7 @@ static void sdram_program_dram_width(struct sys_info * sysinfo)
 	u16 c0dramw=0, c1dramw=0;
 	int idx;
 
-	if (sysinfo->dual_channel)
+	if (sysinfo->sysinfo->selected_timings.channel_mode != CHANNEL_MODE_SINGLE)
 		idx = 2;
 	else
 		idx = 1;
@@ -1280,7 +1310,7 @@ static void sdram_rcomp_buffer_strength_and_slew(struct sys_info *sysinfo)
 	sdram_write_slew_rates(G6SRPUT, slew_group_lookup(dual_channel, idx * 8 + 5));
 
 	/* Channel 1 */
-	if (sysinfo->dual_channel) {
+	if (sysinfo->sysinfo->selected_timings.channel_mode != CHANNEL_MODE_SINGLE) {
 		sdram_write_slew_rates(G7SRPUT, slew_group_lookup(dual_channel, idx * 8 + 6));
 		sdram_write_slew_rates(G8SRPUT, slew_group_lookup(dual_channel, idx * 8 + 7));
 	} else {
@@ -1310,10 +1340,11 @@ static void sdram_program_dll_timings(struct sys_info *sysinfo)
 	MCHBAR16(DQSMT) |= (1 << 13) | (0xc << 0);
 
 	/* We drive both channels with the same speed */
-	switch (sysinfo->memory_frequency) {
-	case 400: chan0dll = 0x26262626; chan1dll=0x26262626; break; /* 400MHz */
-	case 533: chan0dll = 0x22222222; chan1dll=0x22222222; break; /* 533MHz */
-	case 667: chan0dll = 0x11111111; chan1dll=0x11111111; break; /* 667MHz */
+	switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_400MHz: chan0dll = 0x26262626; chan1dll=0x26262626; break; /* 400MHz */
+	case MEM_CLOCK_533MHz: chan0dll = 0x22222222; chan1dll=0x22222222; break; /* 533MHz */
+	case MEM_CLOCK_667MHz: chan0dll = 0x11111111; chan1dll=0x11111111; break; /* 667MHz */
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
 	}
 
 	for (i=0; i < 4; i++) {
@@ -1460,7 +1491,8 @@ static struct dimm_size sdram_get_dimm_size(struct sys_info *sysinfo, u16 dimmno
 {
 	/* Calculate the log base 2 size of a DIMM in bits */
 	struct dimm_size sz;
-	int value, low, rows, columns, device;
+//	int value, low, rows, columns, device;
+	int value, rows, columns, device;
 
 	device = get_dimm_spd_address(sysinfo, dimmno);
 	sz.side1 = 0;
@@ -1470,31 +1502,48 @@ static struct dimm_size sdram_get_dimm_size(struct sys_info *sysinfo, u16 dimmno
 	if (rows < 0) goto hw_err;
 	if ((rows & 0xf) == 0) goto val_err;
 	sz.side1 += rows & 0xf;
-
+	
 	columns = spd_read_byte(device, SPD_NUM_COLUMNS);	/* columns */
 	if (columns < 0) goto hw_err;
 	if ((columns & 0xf) == 0) goto val_err;
 	sz.side1 += columns & 0xf;
 
+// FFF
+	sysinfo->sysinfo->dimms[dimmno / 2].banks = spd_read_byte(device, SPD_NUM_BANKS_PER_SDRAM);
+	sysinfo->sysinfo->dimms[dimmno / 2].page_size =
+		(1 << spd_read_byte(device, SPD_NUM_COLUMNS)) *
+		(1 << (sysinfo->sysinfo->dimms[dimmno / 2].chip_width + 2)) / 8;
+
+	// XXX should reuse here sysinfo->sysinfo->dimms[i].banks = value & 0xff;
 	value = spd_read_byte(device, SPD_NUM_BANKS_PER_SDRAM);	/* banks */
 	if (value < 0) goto hw_err;
 	if ((value & 0xff) == 0) goto val_err;
 	sz.side1 += log2(value & 0xff);
 
+#if 0
+// not ddr2
 	/* Get the module data width and convert it to a power of two */
 	value = spd_read_byte(device, SPD_MODULE_DATA_WIDTH_MSB);	/* (high byte) */
 	if (value < 0) goto hw_err;
 	value &= 0xff;
 	value <<= 8;
+#endif
 
-	low = spd_read_byte(device, SPD_MODULE_DATA_WIDTH_LSB);	/* (low byte) */
-	if (low < 0) goto hw_err;
-	value = value | (low & 0xff);
+//	low = spd_read_byte(device, SPD_MODULE_DATA_WIDTH_LSB);	/* (low byte) */
+//	if (low < 0) goto hw_err;
+//	value = value | (low & 0xff);
+	value = spd_read_byte(device, SPD_MODULE_DATA_WIDTH_LSB);	/* (low byte) */
+	if (value < 0) goto hw_err;
+	value &= 0xff;
 	if ((value != 72) && (value != 64)) goto val_err;
 	sz.side1 += log2(value);
 
+	// sysinfo->sysinfo->dimms[i].chip_width
+
 	/* side 2 */
-	value = spd_read_byte(device, SPD_NUM_DIMM_BANKS);	/* number of physical banks */
+	value = spd_read_byte(device, SPD_NUM_DIMM_BANKS);	/* number of physical banks */			// RANKS!
+
+	// sysinfo->dimms[i].banks
 
 	if (value < 0) goto hw_err;
 	value &= 7;
@@ -1505,6 +1554,8 @@ static struct dimm_size sdram_get_dimm_size(struct sys_info *sysinfo, u16 dimmno
 	/* Start with the symmetrical case */
 	sz.side2 = sz.side1;
 
+// No asymetric DDR2 
+#if 0
 	if ((rows & 0xf0) == 0) goto out;	/* If symmetrical we are done */
 
 	/* Don't die here, I have not come across any of these to test what
@@ -1518,6 +1569,7 @@ static struct dimm_size sdram_get_dimm_size(struct sys_info *sysinfo, u16 dimmno
 	sz.side2 -= (columns & 0x0f);		/* Subtract out columns on side 1 */
 	sz.side2 += ((columns >> 4) & 0x0f);	/* Add in columns on side 2 */
 
+#endif
 	goto out;
 
  val_err:
@@ -1547,16 +1599,24 @@ static void sdram_detect_dimm_size(struct sys_info * sysinfo)
 
 		sz = sdram_get_dimm_size(sysinfo, i);
 
+#if 0
 		sysinfo->banks[i] = spd_read_byte(get_dimm_spd_address(sysinfo, i),
 						  SPD_NUM_BANKS_PER_SDRAM);	/* banks */
+        // FFF
+	// XXX should reuse here sysinfo->sysinfo->dimms[i].banks = value & 0xff;
+#endif
+
 
 		if (sz.side1 < 30)
 			die("DDR-II rank size smaller than 128MB is not supported.\n");
 
 		sysinfo->banksize[i * 2] = 1 << (sz.side1 - 28);
 
+// FFFFF
+		sysinfo->sysinfo->dimms[i / 2].rank_capacity_mb =  sysinfo->banksize[i * 2] * 32;
 		printk(BIOS_DEBUG, "DIMM %d side 0 = %d MB\n", i, sysinfo->banksize[i * 2] * 32 );
 
+#if 0
 		if (!sz.side2)
 			continue;
 
@@ -1567,6 +1627,7 @@ static void sdram_detect_dimm_size(struct sys_info * sysinfo)
 		sysinfo->banksize[(i * 2) + 1] = 1 << (sz.side2 - 28);
 
 		printk(BIOS_DEBUG, "DIMM %d side 1 = %d MB\n", i, sysinfo->banksize[(i * 2) + 1] * 32);
+#endif
 	}
 }
 
@@ -1588,7 +1649,7 @@ static int sdram_program_row_boundaries(struct sys_info *sysinfo)
 	cum1 = cum0;
 
 	/* Exception: Interleaved starts from the beginning */
-	if (sysinfo->interleaved)
+	if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED)
 		cum1 = 0;
 
 #if 0
@@ -1604,7 +1665,7 @@ static int sdram_program_row_boundaries(struct sys_info *sysinfo)
 	}
 
 	/* Set TOLUD Top Of Low Usable DRAM */
-	if (sysinfo->interleaved)
+	if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED)
 		tolud = (cum0 + cum1) << 1;
 	else
 		tolud = (cum1 ? cum1 : cum0)  << 1;
@@ -1783,6 +1844,7 @@ static void sdram_program_odt_tristate(struct sys_info *sysinfo)
 	MCHBAR32(C1DRC2) = reg32;
 }
 
+#if 0
 static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 {
 	u32 reg32, off32;
@@ -1811,7 +1873,7 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 	reg32 &= ~( (1 << 13) | (1 << 12) );
 	MCHBAR32(C1DRC0) = reg32;
 
-	if (!sysinfo->dual_channel && sysinfo->dimm[1] !=
+	if (!sysinfo->sysinfo->selected_timings.channel_mode != CHANNEL_MODE_SINGLE && sysinfo->dimm[1] !=
 			SYSINFO_DIMM_NOT_POPULATED) {
 		reg32 = MCHBAR32(C0DRC0);
 		reg32 |= (1 << 15);
@@ -1829,21 +1891,21 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 	temp_drt = 0;
 
 	/* B2B Write Precharge (same bank) = CL-1 + BL/2 + tWR */
-	reg32 = (sysinfo->cas - 1) + (BURSTLENGTH / 2) + sysinfo->twr;
+	reg32 = (sysinfo->sysinfo->selected_timings.CAS - 1) + (BURSTLENGTH / 2) + sysinfo->sysinfo->selected_timings.tWR;
 	temp_drt |= (reg32 << 28);
 
 	/* Write Auto Precharge (same bank) = CL-1 + BL/2 + tWR + tRP */
 	reg32 += sysinfo->trp;
 	temp_drt |= (reg32 << 4);
 
-	if (sysinfo->memory_frequency == 667) {
+	if (sysinfo->sysinfo->selected_timings.mem_clock == MEM_CLOCK_667MHz) {
 		tWTR = 3; /* 667MHz */
 	} else {
 		tWTR = 2; /* 400 and 533 */
 	}
 
 	/* B2B Write to Read Command Spacing */
-	reg32 = (sysinfo->cas - 1) + (BURSTLENGTH / 2) + tWTR;
+	reg32 = (sysinfo->sysinfo->selected_timings.CAS - 1) + (BURSTLENGTH / 2) + tWTR;
 	temp_drt |= (reg32 << 24);
 
 	/* CxDRT0 [23:22], [21:20], [19:18] [16] have fixed values */
@@ -1851,13 +1913,13 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 
 	/* Program Write Auto Precharge to Activate */
 	off32 = 0;
-	if (sysinfo->fsb_frequency == 667) { /* 667MHz FSB */
+	if (sysinfo->sysinfo->selected_timings.fsb_clock == FSB_CLOCK_667MHz) { /* 667MHz FSB */
 		off32 += 3;
 	}
-	if (sysinfo->memory_frequency == 667) {
+	if (sysinfo->sysinfo->selected_timings.mem_clock == MEM_CLOCK_667MHz) {
 		off32 += 3;
 	}
-	off32 += sysinfo->cas - 3;
+	off32 += sysinfo->sysinfo->selected_timings.CAS - 3;
 	reg32 = drt0_table[off32];
 	temp_drt |= (reg32 << 11);
 
@@ -1879,7 +1941,7 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 	temp_drt |= (sysinfo->trcd - 2) << 4;
 
 	/* CASB Latency */
-	temp_drt |= (cas_table[sysinfo->cas - 3]) << 8;
+	temp_drt |= (cas_table[sysinfo->sysinfo->selected_timings.CAS - 3]) << 8;
 
 	/* Refresh Cycle Time */
 	temp_drt |= (sysinfo->trfc) << 10;
@@ -1891,10 +1953,10 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 	temp_drt |= (0 << 18);
 
 	/* Activate to Precharge Delay */
-	temp_drt |= (sysinfo->tras << 19);
+	temp_drt |= (sysinfo->sysinf->tRAS << 19);
 
 	/* Read to Precharge (tRTP) */
-	if (sysinfo->memory_frequency == 667) {
+	if (sysinfo->sysinfo->selected_timings.mem_clock == MEM_CLOCK_667MHz) {
 		temp_drt |= (1 << 28);
 	} else {
 		temp_drt |= (0 << 28);
@@ -1909,10 +1971,10 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 			page_size = 2; /* 2k pagesize */
 	}
 
-	if (sysinfo->memory_frequency == 533 && page_size == 2) {
+	if (sysinfo->sysinfo->selected_timings.mem_clock == MEM_CLOCK_533MHz && page_size == 2) {
 		reg32 = 1;
 	}
-	if (sysinfo->memory_frequency == 667) {
+	if (sysinfo->sysinfo->selected_timings.mem_clock == MEM_CLOCK_667MHz) {
 		reg32 = page_size;
 	}
 
@@ -1938,19 +2000,20 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 	reg32 &= 0x3f;
 
 	/* 788nS - tRFC */
-	switch (sysinfo->memory_frequency) {
-	case 400: /* 5nS */
+	switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_400MHz: /* 5nS */
 		reg32 = ((78800 / 500) - reg32) & 0x1ff;
 		reg32 |= (0x8c << 16) | (0x0c << 10); /* 1 us */
 		break;
-	case 533: /* 3.75nS */
+	case MEM_CLOCK_533MHz: /* 3.75nS */
 		reg32 = ((78800 / 375) - reg32) & 0x1ff;
 		reg32 |= (0xba << 16) | (0x10 << 10); /* 1 us */
 		break;
-	case 667: /* 3nS */
+	case MEM_CLOCK_667MHz: /* 3nS */
 		reg32 = ((78800 / 300) - reg32) & 0x1ff;
 		reg32 |= (0xe9 << 16) | (0x14 << 10); /* 1 us */
 		break;
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
 	}
 
 	temp_drt |= reg32;
@@ -1958,6 +2021,7 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 	MCHBAR32(C0DRT3) = temp_drt;
 	MCHBAR32(C1DRT3) = temp_drt;
 }
+#endif
 
 static void sdram_set_channel_mode(struct sys_info *sysinfo)
 {
@@ -1965,21 +2029,10 @@ static void sdram_set_channel_mode(struct sys_info *sysinfo)
 
 	printk(BIOS_DEBUG, "Setting mode of operation for memory channels...");
 
-	if (sdram_capabilities_interleave() &&
-		    ( ( sysinfo->banksize[0] + sysinfo->banksize[1] +
-			sysinfo->banksize[2] + sysinfo->banksize[3] ) ==
-		      ( sysinfo->banksize[4] + sysinfo->banksize[5] +
-			sysinfo->banksize[6] + sysinfo->banksize[7] ) ) ) {
-		/* Both channels equipped with DIMMs of the same size */
-		sysinfo->interleaved = 1;
-	} else {
-		sysinfo->interleaved = 0;
-	}
-
 	reg32 = MCHBAR32(DCC);
 	reg32 &= ~(7 << 0);
 
-	if(sysinfo->interleaved) {
+	if(sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED) {
 		/* Dual Channel Interleaved */
 		printk(BIOS_DEBUG, "Dual Channel Interleaved.\n");
 		reg32 |= (1 << 1);
@@ -2010,16 +2063,16 @@ static void sdram_program_pll_settings(struct sys_info *sysinfo)
 {
 	MCHBAR32(PLLMON) = 0x80800000;
 
-	sysinfo->fsb_frequency = fsbclk();
-	if (sysinfo->fsb_frequency == 0xffff)
+	sysinfo->sysinfo->selected_timings.fsb_clock = fsbclk();
+	if (sysinfo->sysinfo->selected_timings.fsb_clock == 0xffff)
 		die("Unsupported FSB speed");
 
 	/* Program CPCTL according to FSB speed */
 	/* Only write the lower byte */
-	switch (sysinfo->fsb_frequency) {
-	case 400: MCHBAR8(CPCTL) = 0x90; break; /* FSB400 */
-	case 533: MCHBAR8(CPCTL) = 0x95; break;	/* FSB533 */
-	case 667: MCHBAR8(CPCTL) = 0x8d; break;	/* FSB667 */
+	switch (sysinfo->sysinfo->selected_timings.fsb_clock) {
+	case FSB_CLOCK_400MHz: MCHBAR8(CPCTL) = 0x90; break; /* FSB400 */
+	case FSB_CLOCK_533MHz: MCHBAR8(CPCTL) = 0x95; break;	/* FSB533 */
+	case FSB_CLOCK_667MHz: MCHBAR8(CPCTL) = 0x8d; break;	/* FSB667 */
 	}
 
 	MCHBAR16(CPCTL) &= ~(1 << 11);
@@ -2046,7 +2099,7 @@ static void sdram_program_graphics_frequency(struct sys_info *sysinfo)
 
 	printk(BIOS_DEBUG, "Setting Graphics Frequency...\n");
 
-	printk(BIOS_DEBUG, "FSB: %d MHz ", sysinfo->fsb_frequency);
+	printk(BIOS_DEBUG, "FSB: %d MHz ", sysinfo->sysinfo->selected_timings.fsb_clock);
 
 	voltage = VOLTAGE_1_05;
 	if (MCHBAR32(DFT_STRAP1) & (1 << 20))
@@ -2100,16 +2153,16 @@ static void sdram_program_graphics_frequency(struct sys_info *sysinfo)
 	if (voltage == VOLTAGE_1_50) {
 		second_vco = 1;
 	} else if ((i945_silicon_revision() > 0) && (freq == CRCLK_250MHz))  {
-		u16 mem = sysinfo->memory_frequency;
-		u16 fsb = sysinfo->fsb_frequency;
+		mem_clock_t mem = sysinfo->sysinfo->mem_clock;
+		fsb_clock_t fsb = sysinfo->sysinfo->selected_timings.fsb_clock;
 
-		if ( (fsb == 667 && mem == 533) ||
-		     (fsb == 533 && mem == 533) ||
-		     (fsb == 533 && mem == 400)) {
+		if ( (fsb == FSB_CLOCK_667MHz && mem == MEM_CLOCK_533MHz) ||
+		     (fsb == FSB_CLOCK_533MHz && mem == MEM_CLOCK_533MHz) ||
+		     (fsb == FSB_CLOCK_533MHz && mem == MEM_CLOCK_400MHz)) {
 			second_vco = 1;
 		}
 
-		if (fsb == 667 && mem == 533)
+		if (fsb == FSB_CLOCK_667MHz && mem == MEM_CLOCK_533MHz)
 			sysinfo->mvco4x = 1;
 	}
 
@@ -2175,10 +2228,11 @@ static void sdram_program_memory_frequency(struct sys_info *sysinfo)
 		clkcfg |= (1 << 7);
 	}
 
-	switch (sysinfo->memory_frequency) {
-	case 400: clkcfg |= (2 << 4); break;
-	case 533: clkcfg |= (3 << 4); break;
-	case 667: clkcfg |= (4 << 4); break;
+	switch (sysinfo->sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_400MHz: clkcfg |= (2 << 4); break;
+	case MEM_CLOCK_533MHz: clkcfg |= (3 << 4); break;
+	case MEM_CLOCK_667MHz: clkcfg |= (4 << 4); break;
+	case MEM_CLOCK_800MHz: die("not there yet"); break;
 	default: die("Target Memory Frequency Error");
 	}
 
@@ -2299,9 +2353,9 @@ static void sdram_program_clock_crossing(void)
 		0x00020108, 0x00000000, /* DDR533 FSB800 */
 		0x00080201, 0x00000000, /* DDR667 FSB800 */
 
-		0x00010402, 0x00000000, /* DDR400 FSB1066 */
-		0x04020108, 0x00000000, /* DDR533 FSB1066 */
-		0x08040110, 0x00000000, /* DDR667 FSB1066 */
+		0x00010402, 0x00000000, /* DDR400 FSB1067 */
+		0x04020108, 0x00000000, /* DDR533 FSB1067 */
+		0x08040110, 0x00000000, /* DDR667 FSB1067 */
 	};
 
 	static const u32 command_clock_crossing[] = {
@@ -2321,9 +2375,9 @@ static void sdram_program_clock_crossing(void)
 		0x00010402, 0x00000000, /* DDR533 FSB800 */
 		0x04020180, 0x00000008, /* DDR667 FSB800 */
 
-		0x00020904, 0x00000000, /* DDR400 FSB1066 */
-		0x02010804, 0x00000000, /* DDR533 FSB1066 */
-		0x180601c0, 0x00000020, /* DDR667 FSB1066 */
+		0x00020904, 0x00000000, /* DDR400 FSB1067 */
+		0x02010804, 0x00000000, /* DDR533 FSB1067 */
+		0x180601c0, 0x00000020, /* DDR667 FSB1067 */
 	};
 #endif
 
@@ -2331,19 +2385,20 @@ static void sdram_program_clock_crossing(void)
 
 	printk(BIOS_DEBUG, "MEM=");
 	switch (memclk()) {
-	case 400:	printk(BIOS_DEBUG, "400"); idx += 0; break;
-	case 533:	printk(BIOS_DEBUG, "533"); idx += 2; break;
-	case 667:	printk(BIOS_DEBUG, "667"); idx += 4; break;
+	case MEM_CLOCK_400MHz:	printk(BIOS_DEBUG, "400"); idx += 0; break;
+	case MEM_CLOCK_533MHz:	printk(BIOS_DEBUG, "533"); idx += 2; break;
+	case MEM_CLOCK_667MHz:	printk(BIOS_DEBUG, "667"); idx += 4; break;
+	case MEM_CLOCK_800MHz:  die("not there yet"); break;
 	default: printk(BIOS_DEBUG, "RSVD %x", memclk()); return;
 	}
 
 	printk(BIOS_DEBUG, " FSB=");
 	switch (fsbclk()) {
-	case 400:	printk(BIOS_DEBUG, "400"); idx += 0; break;
-	case 533:	printk(BIOS_DEBUG, "533"); idx += 6; break;
-	case 667:	printk(BIOS_DEBUG, "667"); idx += 12; break;
-	case 800:	printk(BIOS_DEBUG, "800"); idx += 18; break;
-	case 1066:	printk(BIOS_DEBUG, "1066"); idx += 24; break;
+	case FSB_CLOCK_400MHz:	printk(BIOS_DEBUG, "400"); idx += 0; break;
+	case FSB_CLOCK_533MHz:	printk(BIOS_DEBUG, "533"); idx += 6; break;
+	case FSB_CLOCK_667MHz:	printk(BIOS_DEBUG, "667"); idx += 12; break;
+	case FSB_CLOCK_800MHz:	printk(BIOS_DEBUG, "800"); idx += 18; break;
+	case FSB_CLOCK_1067MHz:	printk(BIOS_DEBUG, "1067"); idx += 24; break;
 	default: printk(BIOS_DEBUG, "RSVD %x\n", fsbclk()); return;
 	}
 
@@ -2422,7 +2477,7 @@ static void sdram_enhanced_addressing_mode(struct sys_info *sysinfo)
 	chan1_dualsided = (sysinfo->banksize[5] || sysinfo->banksize[7]);
 
 	if (sdram_capabilities_enhanced_addressing_xor()) {
-		if (!sysinfo->interleaved) {
+		if (sysinfo->sysinfo->selected_timings.channel_mode != CHANNEL_MODE_DUAL_INTERLEAVED) {
 			/* Single Channel & Dual Channel Assymetric */
 			if (chan0_populated) {
 				if (chan0_dualsided) {
@@ -2453,7 +2508,7 @@ static void sdram_enhanced_addressing_mode(struct sys_info *sysinfo)
 			}
 		}
 	} else {
-		if (!sysinfo->interleaved) {
+		if (sysinfo->sysinfo->selected_timings.channel_mode != CHANNEL_MODE_DUAL_INTERLEAVED) {
 			/* Single Channel & Dual Channel Assymetric */
 			if (chan0_populated) {
 				if (chan0_dualsided) {
@@ -2496,7 +2551,7 @@ static void sdram_post_jedec_initialization(struct sys_info *sysinfo)
 	u32 reg32;
 
 	/* Enable Channel XORing for Dual Channel Interleave */
-	if (sysinfo->interleaved) {
+	if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED) {
 
 		reg32 = MCHBAR32(DCC);
 #if CONFIG_CHANNEL_XOR_RANDOMIZATION
@@ -2596,14 +2651,14 @@ static void sdram_power_management(struct sys_info *sysinfo)
 #else
 	if (i945_silicon_revision() != 0) {
 #endif
-		switch (sysinfo->fsb_frequency) {
-		case 667: MCHBAR32(HGIPMC2) = 0x0d590d59; break;
-		case 533: MCHBAR32(HGIPMC2) = 0x155b155b; break;
+		switch (sysinfo->sysinfo->selected_timings.fsb_clock) {
+		case FSB_CLOCK_667MHz: MCHBAR32(HGIPMC2) = 0x0d590d59; break;
+		case FSB_CLOCK_533MHz: MCHBAR32(HGIPMC2) = 0x155b155b; break;
 		}
 	} else {
-		switch (sysinfo->fsb_frequency) {
-		case 667: MCHBAR32(HGIPMC2) = 0x09c409c4; break;
-		case 533: MCHBAR32(HGIPMC2) = 0x0fa00fa0; break;
+		switch (sysinfo->sysinfo->selected_timings.fsb_clock) {
+		case FSB_CLOCK_667MHz: MCHBAR32(HGIPMC2) = 0x09c409c4; break;
+		case FSB_CLOCK_533MHz: MCHBAR32(HGIPMC2) = 0x0fa00fa0; break;
 		}
 	}
 
@@ -2611,17 +2666,17 @@ static void sdram_power_management(struct sys_info *sysinfo)
 
 	reg32 = MCHBAR32(C2C3TT);
 	reg32 &= 0xffff0000;
-	switch (sysinfo->fsb_frequency) {
-	case 667: reg32 |= 0x0600; break;
-	case 533: reg32 |= 0x0480; break;
+	switch (sysinfo->sysinfo->selected_timings.fsb_clock) {
+	case FSB_CLOCK_667MHz: reg32 |= 0x0600; break;
+	case FSB_CLOCK_533MHz: reg32 |= 0x0480; break;
 	}
 	MCHBAR32(C2C3TT) = reg32;
 
 	reg32 = MCHBAR32(C3C4TT);
 	reg32 &= 0xffff0000;
-	switch (sysinfo->fsb_frequency) {
-	case 667: reg32 |= 0x0b80; break;
-	case 533: reg32 |= 0x0980; break;
+	switch (sysinfo->sysinfo->selected_timings.fsb_clock) {
+	case FSB_CLOCK_667MHz: reg32 |= 0x0b80; break;
+	case FSB_CLOCK_533MHz: reg32 |= 0x0980; break;
 	}
 	MCHBAR32(C3C4TT) = reg32;
 
@@ -2844,7 +2899,7 @@ static void sdram_on_die_termination(struct sys_info *sysinfo)
 		MCHBAR32(C1ODT) = reg32;
 	}
 
-	cas = sysinfo->cas;
+	cas = sysinfo->sysinfo->selected_timings.CAS;
 
 	reg32 = MCHBAR32(C0ODT) & 0xfff00000;
 	reg32 |= odt[(cas-3) * 2];
@@ -2940,7 +2995,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 			bankaddr = 0;
 			break;
 		case 4:
-			if (sysinfo->interleaved) {
+			if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED) {
 				bankaddr = 0x40;
 				break;
 			}
@@ -2948,7 +3003,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 			if (nonzero != -1) {
 				printk(BIOS_DEBUG, "bankaddr from bank size of rank %d\n", nonzero);
 				bankaddr += sysinfo->banksize[nonzero] <<
-					(sysinfo->interleaved ? 26 : 25);
+					(sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED ? 26 : 25);
 				break;
 			}
 			/* No populated bank hit before. Start at address 0 */
@@ -2961,7 +3016,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 		nonzero = i;
 
 		/* Get CAS latency set up */
-		switch (sysinfo->cas) {
+		switch (sysinfo->sysinfo->selected_timings.CAS) {
 		case 5: mrsaddr = MRS_CAS_5; break;
 		case 4: mrsaddr = MRS_CAS_4; break;
 		case 3: mrsaddr = MRS_CAS_3; break;
@@ -2969,7 +3024,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 		}
 
 		/* Get tWR set */
-		switch (sysinfo->twr) {
+		switch (sysinfo->sysinfo->selected_timings.tWR) {
 		case 5: mrsaddr |= MRS_TWR_5; break;
 		case 4: mrsaddr |= MRS_TWR_4; break;
 		case 3: mrsaddr |= MRS_TWR_3; break;
@@ -2980,7 +3035,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 		mrsaddr |= MRS_BT;
 
 		/* Interleaved */
-		if (sysinfo->interleaved) {
+		if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED) {
 			mrsaddr = mrsaddr << 1;
 		}
 
@@ -3013,7 +3068,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 		tmpaddr = bankaddr;
 		if (!sdram_capabilities_dual_channel()) {
 			tmpaddr |= RTT_ODT_75_OHM;
-		} else if (sysinfo->interleaved) {
+		} else if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED) {
 			tmpaddr |= (RTT_ODT_150_OHM << 1);
 		} else {
 			tmpaddr |= RTT_ODT_150_OHM;
@@ -3026,7 +3081,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 		tmpaddr = bankaddr;
 		tmpaddr |= mrsaddr;
 		/* Set DLL reset bit */
-		if (sysinfo->interleaved)
+		if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED)
 			tmpaddr |= (1 << 12);
 		else
 			tmpaddr |= (1 << 11);
@@ -3061,7 +3116,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 		if (!sdram_capabilities_dual_channel()) {
 
 			tmpaddr |= RTT_ODT_75_OHM | EMRS_OCD_DEFAULT;
-		} else if (sysinfo->interleaved) {
+		} else if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED) {
 			tmpaddr |= ((RTT_ODT_150_OHM | EMRS_OCD_DEFAULT) << 1);
 		} else {
 			tmpaddr |= RTT_ODT_150_OHM | EMRS_OCD_DEFAULT;
@@ -3075,7 +3130,7 @@ static void sdram_jedec_enable(struct sys_info *sysinfo)
 		tmpaddr = bankaddr;
 		if (!sdram_capabilities_dual_channel()) {
 			tmpaddr |= RTT_ODT_75_OHM;
-		} else if (sysinfo->interleaved) {
+		} else if (sysinfo->sysinfo->selected_timings.channel_mode == CHANNEL_MODE_DUAL_INTERLEAVED) {
 			tmpaddr |= (RTT_ODT_150_OHM << 1);
 		} else {
 			tmpaddr |= RTT_ODT_150_OHM;
@@ -3105,7 +3160,7 @@ static void sdram_setup_processor_side(void)
 /**
  * @param boot_path: 0 = normal, 1 = reset, 2 = resume from s3
  */
-void sdram_initialize(int boot_path, const u8 *spd_addresses)
+void sdram_initialize(int boot_path, sysinfo_t *sysinfo965)
 {
 	struct sys_info sysinfo;
 #if 0
@@ -3119,10 +3174,17 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 	memset(&sysinfo, 0, sizeof(sysinfo));
 
 	sysinfo.boot_path = boot_path;
-	sysinfo.spd_addresses = spd_addresses;
+
+	sysinfo.sysinfo = sysinfo965;
 
 	/* Look at the type of DIMMs and verify all DIMMs are x8 or x16 width */
 	sdram_get_dram_configuration(&sysinfo);
+
+	/* Determine DIMM size parameters (rows, columns banks) */
+	sdram_detect_dimm_size(&sysinfo);
+
+	sdram_get_dram_channel_mode(&sysinfo);
+
 
 #if 0
 	/* If error, do cold boot */
@@ -3155,9 +3217,6 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 
 	/* determine tWR */
 	sdram_detect_smallest_tWR(&sysinfo);
-
-	/* Determine DIMM size parameters (rows, columns banks) */
-	sdram_detect_dimm_size(&sysinfo);
 
 	/* determine tRFC */
 	sdram_detect_smallest_tRFC(&sysinfo);

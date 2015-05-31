@@ -31,7 +31,9 @@
 #include "delay.h"
 #include "i965.h"
 
+#if 0
 void collect_dimm_config(sysinfo_t *const sysinfo);
+#endif
 
 #if 0
 static const gmch_gfx_t gmch_gfx_types[][5] = {
@@ -237,20 +239,20 @@ void enter_raminit_or_reset(void)
 }
 
 
-#if 0
 static void reset_on_bad_warmboot(void)
 {
 	/* Check self refresh channel status. */
-	const u32 reg = MCHBAR32(PMSTS_MCHBAR);
+	const u32 reg = MCHBAR32(SLFRCS_MCHBAR);
 	/* Clear status bits. R/WC */
-	MCHBAR32(PMSTS_MCHBAR) = reg;
-	if ((reg & PMSTS_WARM_RESET) && !(reg & PMSTS_BOTH_SELFREFRESH)) {
+	MCHBAR32(SLFRCS_MCHBAR) = reg | 1;
+	if ((reg & SLFRCS_WARM_RESET) && !(reg & SLFRCS_BOTH_SELFREFRESH)) {
 		printk(BIOS_INFO, "DRAM was not in self refresh "
 			"during warm boot, reset required.\n");
 		i965_early_reset();
 	}
 }
 
+#if 0
 static void set_system_memory_frequency(const timings_t *const timings)
 {
 	MCHBAR16(CLKCFG_MCHBAR + 0x60) &= ~(1 << 15);
@@ -323,6 +325,7 @@ int raminit_read_vco_index(void)
 		return 0;
 	}
 }
+
 #if 0
 static void set_igd_memory_frequencies(const sysinfo_t *const sysinfo)
 {
@@ -661,53 +664,58 @@ static void misc_settings(const timings_t *const timings,
 	if (stepping >= STEPPING_B1)
 		MCHBAR8(0x234) |= (1 << 3);
 }
+#endif
 
 static void clock_crossing_setup(const fsb_clock_t fsb,
-				 const mem_clock_t ddr3clock,
+				 const mem_clock_t mem,
 				 const dimminfo_t *const dimms)
 {
 	int ch;
 
 	static const u32 values_from_fsb_and_mem[][3][4] = {
-	/* FSB 1067MHz */{
-		/* DDR3-1067 */ { 0x00000000, 0x00000000, 0x00180006, 0x00810060 },
-		/* DDR3-800  */ { 0x00000000, 0x00000000, 0x0000001c, 0x000300e0 },
-		/* DDR3-667  */ { 0x00000000, 0x00001c00, 0x03c00038, 0x0007e000 },
-		},
 	/* FSB 800MHz */{
-		/* DDR3-1067 */ { 0, 0, 0, 0 },
-		/* DDR3-800  */ { 0x00000000, 0x00000000, 0x0030000c, 0x000300c0 },
-		/* DDR3-667  */ { 0x00000000, 0x00000380, 0x0060001c, 0x00030c00 },
+		/* DDR2-667  */ { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff },
+		/* DDR2-533  */ { 0xffffffff, 0xffffffff, 0x01c00038, 0x00070e00 },
 		},
 	/* FSB 667MHz */{
-		/* DDR3-1067 */ { 0, 0, 0, 0 },
-		/* DDR3-800  */ { 0, 0, 0, 0 },
-		/* DDR3-667  */ { 0x00000000, 0x00000000, 0x0030000c, 0x000300c0 },
+		/* DDR2-667  */ { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff },
+		/* DDR2-533  */ { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff },
+		},
+	/* FSB 533MHz */{
+		/* DDR2-667  */ { 0, 0, 0, 0 },
+		/* DDR2-533  */ { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff },
 		},
 	};
 
-	const u32 *data = values_from_fsb_and_mem[fsb][ddr3clock];
+	const u32 *data = values_from_fsb_and_mem[fsb][mem];
 	MCHBAR32(0x0208) = data[3];
 	MCHBAR32(0x020c) = data[2];
-	if (((fsb == FSB_CLOCK_1067MHz) || (fsb == FSB_CLOCK_800MHz)) && (ddr3clock == MEM_CLOCK_667MT))
+#if 0
+	if (((fsb == FSB_CLOCK_1067MHz) || (fsb == FSB_CLOCK_800MHz)) && (mem == MEM_CLOCK_667MT))
 		MCHBAR32(0x0210) = data[1];
+#endif
 
 	static const u32 from_fsb_and_mem[][3] = {
-			 /* DDR3-1067    DDR3-800    DDR3-667 */
-	/* FSB 1067MHz */{ 0x40100401, 0x10040220, 0x08040110, },
-	/* FSB  800MHz */{ 0x00000000, 0x40100401, 0x00080201, },
-	/* FSB  667MHz */{ 0x00000000, 0x00000000, 0x40100401, },
+			 /* DDR2-667   DDR2-533 */
+	/* FSB  800MHz */{ 0xffffffff, 0x00020108, },
+	/* FSB  667MHz */{ 0xffffffff, 0xffffffff, },
+	/* FSB  533MHz */{ 0xffffffff, 0xffffffff, },
 	};
 	FOR_EACH_CHANNEL(ch) {
 		const unsigned int mchbar = 0x1258 + (ch * 0x0100);
-		if ((fsb == FSB_CLOCK_1067MHz) && (ddr3clock == MEM_CLOCK_800MT) && CHANNEL_IS_CARDF(dimms, ch))
+#if 0
+		if ((fsb == FSB_CLOCK_1067MHz) && (mem == MEM_CLOCK_800MT) && CHANNEL_IS_CARDF(dimms, ch))
 			MCHBAR32(mchbar) = 0x08040120;
 		else
-			MCHBAR32(mchbar) = from_fsb_and_mem[fsb][ddr3clock];
+			MCHBAR32(mchbar) = from_fsb_and_mem[fsb][mem];
+#else
+		MCHBAR32(mchbar) = from_fsb_and_mem[fsb][mem];
+#endif
 		MCHBAR32(mchbar + 4) = 0x00000000;
 	}
 }
 
+#if 0
 /* Program egress VC1 timings. */
 static void vc1_program_timings(const fsb_clock_t fsb)
 {
@@ -720,6 +728,7 @@ static void vc1_program_timings(const fsb_clock_t fsb)
 	EPBAR32(0x38) = timings_by_fsb[fsb][1];
 	EPBAR32(0x3c) = timings_by_fsb[fsb][1];
 }
+#endif
 
 /* @prejedec if not zero, set rank size to 128MB and page size to 4KB. */
 static void program_memory_map(const dimminfo_t *const dimms, const channel_mode_t mode, const int prejedec, u16 ggc)
@@ -853,6 +862,7 @@ static void program_memory_map(const dimminfo_t *const dimms, const channel_mode
 	                  "usedMEsize: %dMB\n",
 			  TOM, TOLUD, TOUUD, REMAPbase, REMAPlimit, usedMEsize);
 }
+
 static void prejedec_memory_map(const dimminfo_t *const dimms, channel_mode_t mode)
 {
 	/* Never use dual-interleaved mode in pre-jedec config. */
@@ -863,6 +873,7 @@ static void prejedec_memory_map(const dimminfo_t *const dimms, channel_mode_t mo
 	MCHBAR32(DCC_MCHBAR) |= DCC_NO_CHANXOR;
 }
 
+#if 0
 static void ddr3_select_clock_mux(const mem_clock_t ddr3clock,
 				  const dimminfo_t *const dimms,
 				  const stepping_t stepping)
@@ -1095,7 +1106,19 @@ static void memory_io_init(const mem_clock_t ddr3clock,
 
 	ddr3_read_io_init(ddr3clock, dimms, sff);
 }
+#endif
 
+static void
+pre_jedec_settings1 (void)
+{
+	/* Pre-jedec settings */
+	MCHBAR32(0x40) |= (1 << 1);
+	MCHBAR32(0x230) |= (3 << 1);
+	MCHBAR32(0x238) |= (3 << 24);
+	MCHBAR32(0x23c) |= (3 << 24);
+}
+
+#if 0
 static void jedec_init(const timings_t *const timings,
 		       const dimminfo_t *const dimms)
 {
@@ -1249,11 +1272,40 @@ void raminit_reset_readwrite_pointers(void) {
 	MCHBAR32(0x15f0) |=  (1 << 10);
 }
 
+#if CONFIG_DEBUG_RAM_SETUP
+void sdram_dump_mchbar_registers(void);
+
+void sdram_dump_mchbar_registers(void)
+{
+	int i;
+	printk(BIOS_DEBUG, "Dumping MCHBAR Registers\n");
+
+	for (i=0; i<0xfff; i+=4) {
+		if (MCHBAR32(i) == 0)
+			continue;
+		printk(BIOS_DEBUG, "0x%04x: 0x%08x\n", i, MCHBAR32(i));
+	}
+}
+#endif
+
+void sdram_initialize(int boot_path, sysinfo_t *sysinfo965);
+
+static void
+clkcfg1 (void)
+{
+// reserved
+// 3878.3879    .H..    [0000:fff009a2]   MCHBAR: [00000c00] => 00020332
+// 3878.387a    .H..    [0000:fff009a2]   MCHBAR: [00000c00] <= 00000332
+// 3878.387b    .H..    [0000:fff009a2]   MCHBAR: [00000c00] => 00000332
+	MCHBAR32(CLKCFG_MCHBAR) &= ~(2 << 16);
+}
+
 void raminit(sysinfo_t *const sysinfo, const int s3resume)
 {
-#if 0
 	const dimminfo_t *const dimms = sysinfo->dimms;
 	const timings_t *const timings = &sysinfo->selected_timings;
+
+#if 0
 	const int sff = sysinfo->gfx_type == GMCH_GS45;
 
 	int ch;
@@ -1271,16 +1323,65 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	/* Enable SMBUS. */
 	enable_smbus();
 
+#if 0
 	/* Collect information about DIMMs and find common settings. */
 	collect_dimm_config(sysinfo);
+#else
+	sdram_initialize(0, sysinfo);
+#endif
 
-#if 0
+	sdram_dump_mchbar_registers();
+
+{
+	unsigned int i;
+
+        for (i = 0; i < 2; i++) {
+		printk(BIOS_SPEW, "DIMM Bank %d populated:\n"
+			" byte width:    %4u\n"
+			" page size:     %4u\n"
+			" banks:         %4u\n"
+			" ranks:         %4u\n"
+			" MB:            %4u\n",
+			i,
+			(1 << (sysinfo->dimms[i].chip_width + 2)),
+			sysinfo->dimms[i].page_size,
+			sysinfo->dimms[i].banks,
+			sysinfo->dimms[i].ranks,
+			sysinfo->dimms[i].rank_capacity_mb);
+        }
+
+	printk(BIOS_SPEW, "Negotiated timing:\n"
+		" CAS:    0x%04x\n"
+		" tRAS:   0x%04x\n"
+		" tRP:    0x%04x\n"
+		" tRCD:   0x%04x\n"
+		" tRFC:   0x%04x\n"
+		" tWR:    0x%04x\n",
+		sysinfo->selected_timings.CAS,
+		sysinfo->selected_timings.tRAS,
+		sysinfo->selected_timings.tRP,
+		sysinfo->selected_timings.tRCD,
+		sysinfo->selected_timings.tRFC,
+		sysinfo->selected_timings.tWR);
+}
+
+
 	/* Check for bad warm boot. */
 	reset_on_bad_warmboot();
 
+//////////////////////////////////////
+	clkcfg1();
+
+	/* Program clock crossing registers. */
+	clock_crossing_setup(timings->fsb_clock, timings->mem_clock, dimms);
+
+	pre_jedec_settings1();
+	prejedec_memory_map(dimms, timings->channel_mode);
+//////////////////////////////////////
 
 	/***** From now on, program according to collected infos: *****/
 
+#if 0
 	/* Program DRAM type. */
 	switch (sysinfo->spd_type) {
 	case DDR2:
@@ -1290,7 +1391,9 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 		MCHBAR8(0x1434) |= (3 << 0);
 		break;
 	}
+#endif
 
+#if 0
 	/* Program system memory frequency. */
 	set_system_memory_frequency(timings);
 	/* Program IGD memory frequency. */

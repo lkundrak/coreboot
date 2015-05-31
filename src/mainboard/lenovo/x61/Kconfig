@@ -36,6 +36,14 @@ config MAINBOARD_DIR
 	string
 	default lenovo/x61
 
+config DCACHE_RAM_BASE
+	hex
+	default 0xffde0000
+
+config DCACHE_RAM_SIZE
+	hex
+	default 0x8000
+
 config MAINBOARD_PART_NUMBER
 	string
 	default "7666WJ5"

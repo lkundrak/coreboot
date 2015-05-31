@@ -28,9 +28,9 @@
 #include <stdint.h>
 
 typedef enum {
-	FSB_CLOCK_1067MHz	= 0,
 	FSB_CLOCK_800MHz	= 1,
 	FSB_CLOCK_667MHz	= 2,
+	FSB_CLOCK_533MHz	= 3,
 } fsb_clock_t;
 
 typedef enum { /* Steppings below B1 were pre-production,
@@ -61,12 +61,21 @@ typedef enum {
 } gmch_gfx_t;
 
 typedef enum {
-	MEM_CLOCK_533MHz  = 0,
+#if 0
+	MEM_CLOCK_533MHz  = 10,
 	MEM_CLOCK_400MHz  = 1,
-	MEM_CLOCK_333MHz  = 2,
-	MEM_CLOCK_1067MT  = 0,
+//	MEM_CLOCK_333MHz  = 2,
+	MEM_CLOCK_667MHz  = 3,
+	// DDR3 only?
+	MEM_CLOCK_1067MT  = 10,
 	MEM_CLOCK_800MT   = 1,
-	MEM_CLOCK_667MT   = 2,
+//	MEM_CLOCK_667MT   = 2,
+#else
+	MEM_CLOCK_800MHz  = 0,
+	MEM_CLOCK_533MHz  = 1,
+	MEM_CLOCK_667MHz  = 2,
+	MEM_CLOCK_400MHz  = 3,
+#endif
 } mem_clock_t;
 
 typedef enum {
@@ -88,6 +97,7 @@ typedef enum { /* as in DDR3 spd */
 	CHIP_WIDTH_x32	= 3,
 } chip_width_t;
 
+#if 0 // UNUSED
 typedef enum { /* as in DDR3 spd */
 	CHIP_CAP_256M	= 0,
 	CHIP_CAP_512M	= 1,
@@ -97,29 +107,42 @@ typedef enum { /* as in DDR3 spd */
 	CHIP_CAP_8G	= 5,
 	CHIP_CAP_16G	= 6,
 } chip_capacity_t;
+#endif
 
 typedef struct {
 	unsigned int	CAS;
 	fsb_clock_t	fsb_clock;
 	mem_clock_t	mem_clock;
 	channel_mode_t	channel_mode;
-	unsigned int	tRAS;
-	unsigned int	tRP;
-	unsigned int	tRCD;
-	unsigned int	tRFC;
-	unsigned int	tWR;
+		unsigned int	tRAS;
+		unsigned int	tRP;
+		unsigned int	tRCD;
+		unsigned int	tRFC;
+		unsigned int	tWR;
+#if 0
 	unsigned int	tRD;
 	unsigned int	tRRD;
 	unsigned int	tFAW;
 	unsigned int	tWL;
+		u8 trp;                 /* calculated by sdram_detect_smallest_tRP() */
+		u8 trcd;                /* calculated by sdram_detect_smallest_tRCD() */
+		u8 tras;                /* calculated by sdram_detect_smallest_tRAS() */
+		u8 trfc;                /* calculated by sdram_detect_smallest_tRFC() */
+		u8 twr;                 /* calculated by sdram_detect_smallest_tWR() */
+#endif
+
+
 } timings_t;
 
 typedef struct {
-	unsigned int	card_type; /* 0x0: unpopulated,
-				      0xa - 0xf: raw card type A - F */
-	chip_width_t	chip_width;
-	chip_capacity_t	chip_capacity;
-	unsigned int	page_size; /* of whole DIMM in Bytes (4096 or 8192) */
+//	unsigned int	card_type; /// NOT; SYSINFO_DIMM_X16DS ... /* 0x0: unpopulated,
+				     /*  0xa - 0xf: raw card type A - F */
+	chip_width_t	chip_width;	// CHIP_WIDTH_x8 ... CHIP_WIDTH_x32
+//	chip_capacity_t	chip_capacity;
+	unsigned int	page_size; /* of whole DIMM in Bytes (4096 or 8192) */	// spdinfo.channel[i].page_size * chips_per_rank
+//                        config->channel[cur].page_size = config->channel[cur].width *
+//                                                                (1 << config->channel[cur].cols); /* in Bytes */
+
 	unsigned int	banks;
 	unsigned int	ranks;
 	unsigned int	rank_capacity_mb; /* per rank in Mega Bytes */
@@ -143,23 +166,29 @@ typedef struct {
 	int		enable_peg;
 	u16		ggc;
 
-	int		spd_type;
+//	int		spd_type;
 	timings_t	selected_timings;
 	dimminfo_t	dimms[2];
 	u8		spd_map[4];
 } sysinfo_t;
 #define TOTAL_CHANNELS 2
-#define CHANNEL_IS_POPULATED(dimms, idx) (dimms[idx].card_type != 0)
-#define CHANNEL_IS_CARDF(dimms, idx) (dimms[idx].card_type == 0xf)
-#define IF_CHANNEL_POPULATED(dimms, idx) if (dimms[idx].card_type != 0)
+//#define CHANNEL_IS_POPULATED(dimms, idx) (dimms[idx].card_type != 0)
+#define CHANNEL_IS_POPULATED(dimms, idx) (dimms[idx].banks != 0)
+//#define CHANNEL_IS_CARDF(dimms, idx) (dimms[idx].card_type == 0xf)
+//#define IF_CHANNEL_POPULATED(dimms, idx) if (dimms[idx].card_type != 0)
+#define IF_CHANNEL_POPULATED(dimms, idx) if (dimms[idx].banks != 0)
 #define FOR_EACH_CHANNEL(idx) \
 	for (idx = 0; idx < TOTAL_CHANNELS; ++idx)
 #define FOR_EACH_POPULATED_CHANNEL(dimms, idx) \
 	FOR_EACH_CHANNEL(idx) IF_CHANNEL_POPULATED(dimms, idx)
 
 #define RANKS_PER_CHANNEL 4 /* Only two may be populated */
+/*
 #define IF_RANK_POPULATED(dimms, ch, r) \
 	if (dimms[ch].card_type && ((r) < dimms[ch].ranks))
+*/
+#define IF_RANK_POPULATED(dimms, ch, r) \
+	if (dimms[ch].banks && ((r) < dimms[ch].ranks))
 #define FOR_EACH_RANK_IN_CHANNEL(r) \
 	for (r = 0; r < RANKS_PER_CHANNEL; ++r)
 #define FOR_EACH_POPULATED_RANK_IN_CHANNEL(dimms, ch, r) \
@@ -256,9 +285,9 @@ enum {
 #define MCHBAR16(x) *((volatile u16 *)(DEFAULT_MCHBAR + x))
 #define MCHBAR32(x) *((volatile u32 *)(DEFAULT_MCHBAR + x))
 
-#define PMSTS_MCHBAR		0x0f14	/* Self refresh channel status */
-#define PMSTS_WARM_RESET	(1 << 1)
-#define PMSTS_BOTH_SELFREFRESH	(1 << 0)
+#define SLFRCS_MCHBAR		0x0f14	/* Self refresh channel status */
+#define SLFRCS_WARM_RESET	(1 << 1)
+#define SLFRCS_BOTH_SELFREFRESH	(1 << 0)
 
 #define CLKCFG_MCHBAR		0x0c00
 #define CLKCFG_FSBCLK_SHIFT	0
