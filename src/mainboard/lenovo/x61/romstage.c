@@ -218,7 +218,7 @@ static void early_superio_config(void)
 
 void main(unsigned long bist)
 {
-//	sysinfo_t sysinfo;
+	sysinfo_t sysinfo;
 	int s3resume = 0;
 	int cbmem_initted;
 	u16 reg16;
