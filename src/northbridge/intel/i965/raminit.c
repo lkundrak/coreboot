@@ -26,7 +26,7 @@
 #include <arch/io.h>
 #include <lib.h>
 #include "raminit.h"
-#include "i965.h"
+#include "i945.h"
 #include <cbmem.h>
 
 /* Debugging macros. */
@@ -64,7 +64,6 @@ static inline int spd_read_byte(unsigned device, unsigned address)
 	return smbus_read_byte(device, address);
 }
 
-#if 0
 static __attribute__((noinline)) void do_ram_command(u32 command)
 {
 	u32 reg32;
@@ -145,15 +144,6 @@ static u16 fsbclk(void)
 	return 0xffff;
 }
 #endif
-#endif
-
-#if 0
-#else
-static u16 fsbclk(void)
-{
-	return 667;
-}
-#endif
 
 static int sdram_capabilities_max_supported_memory_frequency(void)
 {
@@ -178,7 +168,6 @@ static int sdram_capabilities_max_supported_memory_frequency(void)
 	return 667;
 }
 
-#if 0
 /**
  * @brief determine whether chipset is capable of dual channel interleaved mode
  *
@@ -194,7 +183,6 @@ static int sdram_capabilities_interleave(void)
 
 	return (!reg32);
 }
-#endif
 
 /**
  * @brief determine whether chipset is capable of two memory channels
@@ -212,7 +200,6 @@ static int sdram_capabilities_dual_channel(void)
 	return (!reg32);
 }
 
-#if 0
 static int sdram_capabilities_enhanced_addressing_xor(void)
 {
 	u8 reg8;
@@ -222,7 +209,6 @@ static int sdram_capabilities_enhanced_addressing_xor(void)
 
 	return (!reg8);
 }
-#endif
 
 static int sdram_capabilities_two_dimms_per_channel(void)
 {
@@ -252,7 +238,6 @@ static int sdram_capabilities_MEM4G_disable(void)
 #define GFX_FREQUENCY_CAP_250MHZ	0x02
 #define GFX_FREQUENCY_CAP_ALL		0x00
 
-#if 0
 static int sdram_capabilities_core_frequencies(void)
 {
 	u8 reg8;
@@ -329,7 +314,6 @@ static void sdram_detect_errors(struct sys_info *sysinfo)
 		for (;;) asm("hlt"); /* Wait for reset! */
 	}
 }
-#endif
 
 /**
  * @brief Get generic DIMM parameters.
@@ -891,7 +875,6 @@ static void sdram_verify_burst_length(struct sys_info * sysinfo)
 	}
 }
 
-#if 0
 static void sdram_program_dram_width(struct sys_info * sysinfo)
 {
 	u16 c0dramw=0, c1dramw=0;
@@ -1413,7 +1396,6 @@ static void sdram_enable_system_memory_io(struct sys_info *sysinfo)
 		MCHBAR32(C1DRC1) = reg32;
 	}
 }
-#endif
 
 struct dimm_size {
 	unsigned long side1;
@@ -1534,7 +1516,6 @@ static void sdram_detect_dimm_size(struct sys_info * sysinfo)
 	}
 }
 
-#if 0
 static int sdram_program_row_boundaries(struct sys_info *sysinfo)
 {
 	int i;
@@ -3064,7 +3045,6 @@ static void sdram_setup_processor_side(void)
 	if (i945_silicon_revision() == 0)
 		MCHBAR32(SLPCTL) |= (1 << 8);
 }
-#endif
 
 /**
  * @param boot_path: 0 = normal, 1 = reset, 2 = resume from s3
@@ -3072,11 +3052,7 @@ static void sdram_setup_processor_side(void)
 void sdram_initialize(int boot_path, const u8 *spd_addresses)
 {
 	struct sys_info sysinfo;
-#if 0
 	u8 reg8, cas_mask;
-#else
-	u8 cas_mask;
-#endif
 
 	printk(BIOS_DEBUG, "Setting up RAM controller.\n");
 
@@ -3088,10 +3064,8 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 	/* Look at the type of DIMMs and verify all DIMMs are x8 or x16 width */
 	sdram_get_dram_configuration(&sysinfo);
 
-#if 0
 	/* If error, do cold boot */
 	sdram_detect_errors(&sysinfo);
-#endif
 
 	/* Check whether we have stacked DIMMs */
 	sdram_verify_package_type(&sysinfo);
@@ -3126,7 +3100,6 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 	/* determine tRFC */
 	sdram_detect_smallest_tRFC(&sysinfo);
 
-#if 0
 	/* Program PLL settings */
 	sdram_program_pll_settings(&sysinfo);
 
@@ -3178,12 +3151,10 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 	/* Enable System Memory Clocks */
 	sdram_enable_memory_clocks(&sysinfo);
 
-#if 0
 	if (boot_path == BOOT_PATH_NORMAL) {
 		/* Jedec Initialization sequence */
 		sdram_jedec_enable(&sysinfo);
 	}
-#endif
 
 	/* Program Power Management Registers */
 	sdram_power_management(&sysinfo);
@@ -3211,5 +3182,4 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 	printk(BIOS_DEBUG, "RAM initialization finished.\n");
 
 	sdram_setup_processor_side();
-#endif
 }
