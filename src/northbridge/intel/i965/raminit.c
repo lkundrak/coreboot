@@ -1288,7 +1288,7 @@ void sdram_dump_mchbar_registers(void)
 }
 #endif
 
-void sdram_initialize(int boot_path, sysinfo_t *sysinfo965);
+void sdram_initialize(sysinfo_t *sysinfo965);
 
 static void
 clkcfg1 (void)
@@ -1327,7 +1327,7 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	/* Collect information about DIMMs and find common settings. */
 	collect_dimm_config(sysinfo);
 #else
-	sdram_initialize(0, sysinfo);
+	sdram_initialize(sysinfo);
 #endif
 
 	sdram_dump_mchbar_registers();

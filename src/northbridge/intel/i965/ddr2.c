@@ -36,8 +36,8 @@ struct sys_info {
 	u8 interleaved;
 #endif
 
-	u8 mvco4x;		/* 0 (8x) or 1 (4x) */
-	u8 clkcfg_bit7;
+//	u8 mvco4x;		/* 0 (8x) or 1 (4x) */
+//	u8 clkcfg_bit7;
 //	u8 boot_path;
 //#define BOOT_PATH_NORMAL	0
 //#define BOOT_PATH_RESET		1
@@ -63,7 +63,7 @@ struct sys_info {
 } __attribute__ ((packed));
 
 void receive_enable_adjust(struct sys_info *sysinfo);
-void sdram_initialize(int boot_path, sysinfo_t *sysinfo965);
+void sdram_initialize(/*int boot_path,*/ sysinfo_t *sysinfo965);
 int fixup_i945_errata(void);
 void udelay(u32 us);
 
@@ -3190,7 +3190,7 @@ static void sdram_setup_processor_side(void)
 /**
  * @param boot_path: 0 = normal, 1 = reset, 2 = resume from s3
  */
-void sdram_initialize(int boot_path, sysinfo_t *sysinfo965)
+void sdram_initialize(/* int boot_path,*/ sysinfo_t *sysinfo965)
 {
 	struct sys_info sysinfo;
 #if 0
