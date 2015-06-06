@@ -2,6 +2,7 @@ set -x
 set -e
 
 # decode-dimms --merge-cells --format --side-by-side -x $(ls *.hex |sort -n) >dimms.html
+# html2ps dimms.html >dimms.ps ; ps2pdf dimms.ps; evince dimms.pdf
 
 W=-Werror
 cc -O0 -m32 -D__PRE_RAM__ -fno-builtin -include src/include/kconfig.h -Ibuild -Isrc/arch/x86/include -Isrc/include -Isrc src/northbridge/intel/i965/raminit.c src/northbridge/intel/i965/ddr2.c src/northbridge/intel/i965/ram_calc.c src/lib/clog2.c test/emu.c -Wall -g3 -o test/emu $W

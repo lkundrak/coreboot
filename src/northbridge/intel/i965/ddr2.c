@@ -29,7 +29,7 @@ struct sys_info {
 
 	u8 cas;			/* 3, 4 or 5 */
 #endif
-	u8 refresh;		/* 0 = 15.6us, 1 = 7.8us */
+//	u8 refresh;		/* 0 = 15.6us, 1 = 7.8us */ 	// always 7.8
 
 #if 0
 	u8 dual_channel;	/* 0 or 1 */
@@ -56,7 +56,7 @@ struct sys_info {
 
 //	u8 banks[2 * DIMM_SOCKETS];
 
-	u8 banksize[2 * 2 * DIMM_SOCKETS];
+//	u8 banksize[2 * 2 * DIMM_SOCKETS];
 //	const u8 *spd_addresses;
 	sysinfo_t *sysinfo;
 
@@ -883,6 +883,8 @@ static void sdram_detect_smallest_tWR(struct sys_info * sysinfo)
 
 static void sdram_detect_smallest_tRFC(struct sys_info * sysinfo)
 {
+//// BANKSIZE!!!
+#if 0
 	int i, index = 0;
 
 	const u8 tRFC_cycles[] = {
@@ -933,8 +935,11 @@ static void sdram_detect_smallest_tRFC(struct sys_info * sysinfo)
 
 	printk(BIOS_DEBUG, "tRFC = %d cycles\n", tRFC_cycles[index]);
 	sysinfo->sysinfo->selected_timings.tRFC = tRFC_cycles[index];
+#endif
 }
 
+/// Refresh is always 7.8
+#if 0
 static void sdram_detect_smallest_refresh(struct sys_info * sysinfo)
 {
 	int i;
@@ -968,6 +973,7 @@ static void sdram_detect_smallest_refresh(struct sys_info * sysinfo)
 	}
 	printk(BIOS_DEBUG, "Refresh: %s\n", sysinfo->refresh?"7.8us":"15.6us");
 }
+#endif
 
 static void sdram_verify_burst_length(struct sys_info * sysinfo)
 {
@@ -1615,12 +1621,13 @@ out:
 static void sdram_detect_dimm_size(struct sys_info * sysinfo)
 {
 	int i;
+	u8 banksize[2 * 2 * DIMM_SOCKETS];
 
 	for(i = 0; i < 2 * DIMM_SOCKETS; i++) {
 		struct dimm_size sz;
 
-		sysinfo->banksize[i * 2] = 0;			// ranksize...
-		sysinfo->banksize[(i * 2) + 1] = 0;
+		banksize[i * 2] = 0;			// ranksize...
+		banksize[(i * 2) + 1] = 0;
 
 printk(BIOS_SPEW, ">>1\n");
 //		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
@@ -1641,11 +1648,11 @@ printk(BIOS_SPEW, ">>2\n");
 		if (sz.side1 < 30)
 			die("DDR-II rank size smaller than 128MB is not supported.\n");
 
-		sysinfo->banksize[i * 2] = 1 << (sz.side1 - 28);
+		banksize[i * 2] = 1 << (sz.side1 - 28);
 
 // FFFFF
-		sysinfo->sysinfo->dimms[i / 2].rank_capacity_mb =  sysinfo->banksize[i * 2] * 32;
-		printk(BIOS_DEBUG, "DIMM %d side 0 = %d MB\n", i, sysinfo->banksize[i * 2] * 32 );
+		sysinfo->sysinfo->dimms[i / 2].rank_capacity_mb =  banksize[i * 2] * 32;
+		printk(BIOS_DEBUG, "DIMM %d side 0 = %d MB\n", i, banksize[i * 2] * 32 );
 
 #if 0
 		if (!sz.side2)
@@ -1655,9 +1662,9 @@ printk(BIOS_SPEW, ">>2\n");
 		if (sz.side2 < 30)
 			die("DDR-II rank size smaller than 128MB is not supported.\n");
 
-		sysinfo->banksize[(i * 2) + 1] = 1 << (sz.side2 - 28);
+		banksize[(i * 2) + 1] = 1 << (sz.side2 - 28);
 
-		printk(BIOS_DEBUG, "DIMM %d side 1 = %d MB\n", i, sysinfo->banksize[(i * 2) + 1] * 32);
+		printk(BIOS_DEBUG, "DIMM %d side 1 = %d MB\n", i, banksize[(i * 2) + 1] * 32);
 #endif
 	}
 }
@@ -1799,6 +1806,8 @@ static void sdram_set_bank_architecture(struct sys_info *sysinfo)
 	}
 }
 
+/// Refresh is always 7.8
+#if 0
 #define REFRESH_7_8US	1
 #define REFRESH_15_6US	0
 static void sdram_program_refresh_rate(struct sys_info *sysinfo)
@@ -1817,6 +1826,7 @@ static void sdram_program_refresh_rate(struct sys_info *sysinfo)
 	MCHBAR32(C1DRC0) &= ~(7 << 8);
 	MCHBAR32(C1DRC0) |= reg32;
 }
+#endif
 
 static void sdram_program_cke_tristate(struct sys_info *sysinfo)
 {
@@ -3241,7 +3251,8 @@ void sdram_initialize(/* int boot_path,*/ sysinfo_t *sysinfo965)
 	sdram_detect_smallest_tRCD(&sysinfo);
 
 	/* Determine smallest refresh period */
-	sdram_detect_smallest_refresh(&sysinfo);
+// Always 7.8
+//	sdram_detect_smallest_refresh(&sysinfo);
 
 	/* Verify all DIMMs support burst length 8 */
 	sdram_verify_burst_length(&sysinfo);
