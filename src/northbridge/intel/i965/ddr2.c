@@ -473,11 +473,8 @@ sysinfo->sysinfo->dimms[i / 2].chip_width = CHIP_WIDTH_x16;
 		dimm_mask |= (1 << i);
 	}
 
-	if (!dimm_mask) {
-printk(BIOS_SPEW, ">10> %x %x %x %x\n", sysinfo->sysinfo->spd_map[0], sysinfo->sysinfo->spd_map[1], sysinfo->sysinfo->spd_map[2], sysinfo->sysinfo->spd_map[3]);
-
+	if (!dimm_mask)
 		die("No memory installed.\n");
-	}
 
 	if (!(dimm_mask & ((1 << DIMM_SOCKETS) - 1))) {
 		printk(BIOS_INFO, "Channel 0 has no memory populated.\n");
@@ -1591,7 +1588,7 @@ static void sdram_detect_dimm_size(struct sys_info * sysinfo)
 	for(i = 0; i < 2 * DIMM_SOCKETS; i++) {
 		struct dimm_size sz;
 
-		sysinfo->banksize[i * 2] = 0;
+		sysinfo->banksize[i * 2] = 0;			// ranksize...
 		sysinfo->banksize[(i * 2) + 1] = 0;
 
 		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
