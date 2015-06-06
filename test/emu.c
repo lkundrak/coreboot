@@ -11,7 +11,8 @@
 #include <northbridge/intel/i965/i965.h>
 #include <arch/io.h>
 
-u8 *spd1, *spd2;
+u8 empty_spd[256];
+u8 *spd1 = empty_spd, *spd2 = empty_spd;
 
 void perror(const char *s);
 void __attribute__((noreturn)) exit (int);
@@ -43,14 +44,13 @@ int smbus_read_byte(unsigned device, unsigned address)
 		return spd1[address];
 	else if (device == 0x51)
 		return spd2[address];
-	printk (BIOS_SPEW, "Invalid read %x: %x <<<\n", device, address);
+	printk (BIOS_SPEW, "Invalid read %x: %x\n", device, address);
 	return -1;
 }
 
 int
 main (int argc, const char *argv[])
 {
-	int dimm1, dimm2;
 	sysinfo_t sysinfo;
 
 	/* map PCIEXBAR */
@@ -71,10 +71,35 @@ main (int argc, const char *argv[])
 		return 1;
 	}
 
-	dimm1 = open (argc > 1 ? argv[1] : "test/dimms/6", O_RDONLY);
-	spd1 = mmap (NULL, 256, PROT_READ, MAP_PRIVATE, dimm1, 0);
-	dimm2 = open (argc > 2 ? argv[2] : "test/dimms/7", O_RDONLY);
-	spd2 = mmap (NULL, 256, PROT_READ, MAP_PRIVATE, dimm2, 0);
+	/* DIMM1 */
+	if (argc > 1) {
+		int fd = open (argv[1], O_RDONLY);
+		if (fd == -1) {
+			perror (argv[1]);
+			return 1;
+		}
+		spd1 = mmap (NULL, 256, PROT_READ, MAP_PRIVATE, fd, 0);
+		if (spd1 == MAP_FAILED) {
+			perror ("mmap SPD1");
+			return 1;
+		}
+		close(fd);
+	}
+
+	/* DIMM2 */
+	if (argc > 2) {
+		int fd = open (argv[2], O_RDONLY);
+		if (fd == -1) {
+			perror (argv[2]);
+			return 1;
+		}
+		spd2 = mmap (NULL, 256, PROT_READ, MAP_PRIVATE, fd, 0);
+		if (spd2 == MAP_FAILED) {
+			perror ("mmap SPD2");
+			return 1;
+		}
+		close(fd);
+	}
 
 	memset(&sysinfo, 0, sizeof(sysinfo));
 	sysinfo.spd_map[0] = 0x50;

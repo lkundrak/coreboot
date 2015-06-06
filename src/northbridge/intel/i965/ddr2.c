@@ -43,10 +43,11 @@ struct sys_info {
 #define BOOT_PATH_RESET		1
 #define BOOT_PATH_RESUME	2
 
-	u8 package;		/* 0 = planar, 1 = stacked */
+// XXX no stacked?
+//	u8 package;		/* 0 = planar, 1 = stacked */
 #define SYSINFO_PACKAGE_PLANAR		0x00
 #define SYSINFO_PACKAGE_STACKED		0x01
-	u8 dimm[2 * DIMM_SOCKETS];
+//	u8 dimm[2 * DIMM_SOCKETS];
 #define SYSINFO_DIMM_X16DS		0x00
 #define SYSINFO_DIMM_X8DS		0x01
 #define SYSINFO_DIMM_X16SS		0x02
@@ -400,7 +401,11 @@ static void sdram_get_dram_configuration(struct sys_info *sysinfo)
 		u8 reg8;
 
 		/* Initialize the socket information with a sane value */
-		sysinfo->dimm[i] = SYSINFO_DIMM_NOT_POPULATED;
+if (i % 2)
+	continue;
+//sysinfo->sysinfo->dimms[i / 2].ranks = 0;
+// FFf
+//		sysinfo->dimm[i] = SYSINFO_DIMM_NOT_POPULATED;
 
 		/* Dual Channel not supported, but Channel 1? Bail out */
 		if (!sdram_capabilities_dual_channel() && (i >> 1))
@@ -413,9 +418,6 @@ static void sdram_get_dram_configuration(struct sys_info *sysinfo)
 		printk(BIOS_DEBUG, "DDR II Channel %d Socket %d: ", (i >> 1), (i & 1));
 
 		if (spd_read_byte(device, SPD_MEMORY_TYPE) != SPD_MEMORY_TYPE_SDRAM_DDR2) {
-
-printk (BIOS_DEBUG, ">>> %d %x %x <<<\n", i, device, spd_read_byte(device, SPD_MEMORY_TYPE));
-
 			printk(BIOS_DEBUG, "N/A\n");
 			continue;
 		}
@@ -432,11 +434,17 @@ printk (BIOS_DEBUG, ">>> %d %x %x <<<\n", i, device, spd_read_byte(device, SPD_M
 
 // FFF ranks
 sysinfo->sysinfo->dimms[i / 2].ranks = (spd_read_byte(device, SPD_NUM_DIMM_BANKS) & 0x07) + 1;
+if (sysinfo->sysinfo->dimms[i / 2].ranks > 2)
+	printk(BIOS_DEBUG, "Unsupported.\n");
+
+printk(BIOS_SPEW, "%d >>%d<<\n", i, sysinfo->sysinfo->dimms[i / 2].ranks);
 
 		switch (spd_read_byte(device, SPD_PRIMARY_SDRAM_WIDTH)) {
 		case 0x08:
 // FFF width
 sysinfo->sysinfo->dimms[i / 2].chip_width = CHIP_WIDTH_x8;
+printk(BIOS_DEBUG, "x8\n");
+#if 0
 			switch (spd_read_byte(device, SPD_NUM_DIMM_BANKS) & 0x0f) {
 			case 1:
 				printk(BIOS_DEBUG, "x8DDS\n");
@@ -449,10 +457,13 @@ sysinfo->sysinfo->dimms[i / 2].chip_width = CHIP_WIDTH_x8;
 			default:
 				printk(BIOS_DEBUG, "Unsupported.\n");
 			}
+#endif
 			break;
 		case 0x10:
 // FFF width
 sysinfo->sysinfo->dimms[i / 2].chip_width = CHIP_WIDTH_x16;
+printk(BIOS_DEBUG, "x16\n");
+#if 0
 			switch (spd_read_byte(device, SPD_NUM_DIMM_BANKS) & 0x0f) {
 			case 1:
 				printk(BIOS_DEBUG, "x16DS\n");
@@ -465,6 +476,7 @@ sysinfo->sysinfo->dimms[i / 2].chip_width = CHIP_WIDTH_x16;
 			default:
 				printk(BIOS_DEBUG, "Unsupported.\n");
 			}
+#endif
 			break;
 		default:
 			die("Unsupported DDR-II memory width.\n");
@@ -515,6 +527,8 @@ static void sdram_get_dram_channel_mode(struct sys_info *sysinfo)
 	}
 }
 
+// XXX no stacked?
+#if 0
 /**
  * @brief determine if any DIMMs are stacked
  *
@@ -527,7 +541,8 @@ static void sdram_verify_package_type(struct sys_info * sysinfo)
 	/* Assume no stacked DIMMs are available until we find one */
 	sysinfo->package = 0;
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+//		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if ( 2].ranks == 0/ 2].ranks == 0)
 			continue;
 
 		/* Is the current DIMM a stacked DIMM? */
@@ -535,6 +550,7 @@ static void sdram_verify_package_type(struct sys_info * sysinfo)
 			sysinfo->package = 1;
 	}
 }
+#endif
 
 static u8 sdram_possible_cas_latencies(struct sys_info * sysinfo)
 {
@@ -547,9 +563,12 @@ static u8 sdram_possible_cas_latencies(struct sys_info * sysinfo)
 		   SPD_CAS_LATENCY_DDR2_5;
 
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
-		if (sysinfo->dimm[i] != SYSINFO_DIMM_NOT_POPULATED)
-			cas_mask &= spd_read_byte(get_dimm_spd_address(sysinfo, i),
-						  SPD_ACCEPTABLE_CAS_LATENCIES);
+//		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
+			continue;
+
+		cas_mask &= spd_read_byte(get_dimm_spd_address(sysinfo, i),
+					  SPD_ACCEPTABLE_CAS_LATENCIES);
 	}
 
 	if(!cas_mask) {
@@ -608,9 +627,9 @@ static void sdram_detect_cas_latency_and_ram_speed(struct sys_info * sysinfo, u8
 			int current_cas_mask;
 
 			PRINTK_DEBUG("  DIMM: %d\n", i);
-			if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED) {
+//			if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+			if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 				continue;
-			}
 
 			current_cas_mask = spd_read_byte(device, SPD_ACCEPTABLE_CAS_LATENCIES);
 
@@ -710,7 +729,8 @@ static void sdram_detect_smallest_tRAS(struct sys_info * sysinfo)
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
 		u8 reg8;
 
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		//if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 			continue;
 
 		reg8 = spd_read_byte(get_dimm_spd_address(sysinfo, i), SPD_MIN_ACTIVE_TO_PRECHARGE_DELAY);
@@ -751,7 +771,8 @@ static void sdram_detect_smallest_tRP(struct sys_info * sysinfo)
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
 		u8 reg8;
 
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		//if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 			continue;
 
 		reg8 = spd_read_byte(get_dimm_spd_address(sysinfo, i), SPD_MIN_ROW_PRECHARGE_TIME);
@@ -793,7 +814,8 @@ static void sdram_detect_smallest_tRCD(struct sys_info * sysinfo)
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
 		u8 reg8;
 
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		//if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 			continue;
 
 		reg8 = spd_read_byte(get_dimm_spd_address(sysinfo, i), SPD_MIN_RAS_TO_CAS_DELAY);
@@ -834,7 +856,8 @@ static void sdram_detect_smallest_tWR(struct sys_info * sysinfo)
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
 		u8 reg8;
 
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		//if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 			continue;
 
 		reg8 = spd_read_byte(get_dimm_spd_address(sysinfo, i), SPD_WRITE_RECOVERY_TIME);
@@ -869,7 +892,8 @@ static void sdram_detect_smallest_tRFC(struct sys_info * sysinfo)
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
 		u8 reg8;
 
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		//if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 			continue;
 
 		reg8 = sysinfo->banksize[i*2];
@@ -880,7 +904,8 @@ static void sdram_detect_smallest_tRFC(struct sys_info * sysinfo)
 		case 0x20: reg8 = 3; break;
 		}
 
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_X16DS || sysinfo->dimm[i] == SYSINFO_DIMM_X16SS)
+//		if (sysinfo->dimm[i] == SYSINFO_DIMM_X16DS || sysinfo->dimm[i] == SYSINFO_DIMM_X16SS)
+		if (sysinfo->sysinfo->dimms[i / 2].chip_width == CHIP_WIDTH_x16)
 			reg8++;
 
 		if (reg8 > 3) {
@@ -916,7 +941,8 @@ static void sdram_detect_smallest_refresh(struct sys_info * sysinfo)
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
 		int refresh;
 
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		//if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 			continue;
 
 		refresh = spd_read_byte(get_dimm_spd_address(sysinfo, i),
@@ -945,7 +971,8 @@ static void sdram_verify_burst_length(struct sys_info * sysinfo)
 	int i;
 
 	for (i=0; i<2*DIMM_SOCKETS; i++) {
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+//		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 			continue;
 
 		if (!(spd_read_byte(get_dimm_spd_address(sysinfo, i),
@@ -1505,6 +1532,7 @@ static struct dimm_size sdram_get_dimm_size(struct sys_info *sysinfo, u16 dimmno
 	if ((columns & 0xf) == 0) goto val_err;
 	sz.side1 += columns & 0xf;
 
+printk(BIOS_SPEW, "========================================\n");
 // FFF
 	sysinfo->sysinfo->dimms[dimmno / 2].banks = spd_read_byte(device, SPD_NUM_BANKS_PER_SDRAM);
 	sysinfo->sysinfo->dimms[dimmno / 2].page_size =
@@ -1591,8 +1619,11 @@ static void sdram_detect_dimm_size(struct sys_info * sysinfo)
 		sysinfo->banksize[i * 2] = 0;			// ranksize...
 		sysinfo->banksize[(i * 2) + 1] = 0;
 
-		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+printk(BIOS_SPEW, ">>1\n");
+//		if (sysinfo->dimm[i] == SYSINFO_DIMM_NOT_POPULATED)
+		if (i % 2 || sysinfo->sysinfo->dimms[i / 2].ranks == 0)
 			continue;
+printk(BIOS_SPEW, ">>2\n");
 
 		sz = sdram_get_dimm_size(sysinfo, i);
 
@@ -1841,7 +1872,6 @@ static void sdram_program_odt_tristate(struct sys_info *sysinfo)
 	MCHBAR32(C1DRC2) = reg32;
 }
 
-#if 0
 static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 {
 	u32 reg32, off32;
@@ -2018,7 +2048,6 @@ static void sdram_set_timing_and_control(struct sys_info *sysinfo)
 	MCHBAR32(C0DRT3) = temp_drt;
 	MCHBAR32(C1DRT3) = temp_drt;
 }
-#endif
 
 static void sdram_set_channel_mode(struct sys_info *sysinfo)
 {
@@ -2033,8 +2062,9 @@ static void sdram_set_channel_mode(struct sys_info *sysinfo)
 		/* Dual Channel Interleaved */
 		printk(BIOS_DEBUG, "Dual Channel Interleaved.\n");
 		reg32 |= (1 << 1);
-	} else if (sysinfo->dimm[0] == SYSINFO_DIMM_NOT_POPULATED &&
-			sysinfo->dimm[1] == SYSINFO_DIMM_NOT_POPULATED) {
+//	} else if (sysinfo->dimm[0] == SYSINFO_DIMM_NOT_POPULATED &&
+//			sysinfo->dimm[1] == SYSINFO_DIMM_NOT_POPULATED) {
+	else if (sysinfo->sysinfo->dimms[1].ranks == 0) {
 		/* Channel 1 only */
 		printk(BIOS_DEBUG, "Single Channel 1 only.\n");
 		reg32 |= (1 << 2);
@@ -3189,7 +3219,8 @@ void sdram_initialize(int boot_path, sysinfo_t *sysinfo965)
 #endif
 
 	/* Check whether we have stacked DIMMs */
-	sdram_verify_package_type(&sysinfo);
+// XXX no stacked?
+///	sdram_verify_package_type(&sysinfo);
 
 	/* Determine common CAS */
 	cas_mask = sdram_possible_cas_latencies(&sysinfo);
