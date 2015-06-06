@@ -38,21 +38,21 @@ struct sys_info {
 
 	u8 mvco4x;		/* 0 (8x) or 1 (4x) */
 	u8 clkcfg_bit7;
-	u8 boot_path;
-#define BOOT_PATH_NORMAL	0
-#define BOOT_PATH_RESET		1
-#define BOOT_PATH_RESUME	2
+//	u8 boot_path;
+//#define BOOT_PATH_NORMAL	0
+//#define BOOT_PATH_RESET		1
+//#define BOOT_PATH_RESUME	2
 
 // XXX no stacked?
 //	u8 package;		/* 0 = planar, 1 = stacked */
-#define SYSINFO_PACKAGE_PLANAR		0x00
-#define SYSINFO_PACKAGE_STACKED		0x01
+//#define SYSINFO_PACKAGE_PLANAR		0x00
+//#define SYSINFO_PACKAGE_STACKED		0x01
 //	u8 dimm[2 * DIMM_SOCKETS];
-#define SYSINFO_DIMM_X16DS		0x00
-#define SYSINFO_DIMM_X8DS		0x01
-#define SYSINFO_DIMM_X16SS		0x02
-#define SYSINFO_DIMM_X8DDS		0x03
-#define SYSINFO_DIMM_NOT_POPULATED	0x04
+//#define SYSINFO_DIMM_X16DS		0x00
+//#define SYSINFO_DIMM_X8DS		0x01
+//#define SYSINFO_DIMM_X16SS		0x02
+//#define SYSINFO_DIMM_X8DDS		0x03
+//#define SYSINFO_DIMM_NOT_POPULATED	0x04
 
 //	u8 banks[2 * DIMM_SOCKETS];
 
@@ -510,10 +510,13 @@ static void sdram_get_dram_channel_mode(struct sys_info *sysinfo)
 
 	if (sdram_capabilities_dual_channel()) {
 		if (sdram_capabilities_interleave() &&
-			    ( ( sysinfo->banksize[0] + sysinfo->banksize[1] +
-				sysinfo->banksize[2] + sysinfo->banksize[3] ) ==
-			      ( sysinfo->banksize[4] + sysinfo->banksize[5] +
-				sysinfo->banksize[6] + sysinfo->banksize[7] ) ) ) {
+// FFF
+//			    ( ( sysinfo->banksize[0] + sysinfo->banksize[1] +
+//				sysinfo->banksize[2] + sysinfo->banksize[3] ) ==
+//			      ( sysinfo->banksize[4] + sysinfo->banksize[5] +
+//				sysinfo->banksize[6] + sysinfo->banksize[7] ) ) ) {
+				sysinfo->sysinfo->dimms[0].rank_capacity_mb ==
+				sysinfo->sysinfo->dimms[1].rank_capacity_mb) {
 			/* Both channels equipped with DIMMs of the same size */
 			sysinfo->sysinfo->selected_timings.channel_mode = CHANNEL_MODE_DUAL_INTERLEAVED;
 			printk(BIOS_DEBUG, "This mainboard supports Interleaved Dual Channel Operation.\n");
@@ -3200,7 +3203,7 @@ void sdram_initialize(int boot_path, sysinfo_t *sysinfo965)
 
 	memset(&sysinfo, 0, sizeof(sysinfo));
 
-	sysinfo.boot_path = boot_path;
+//	sysinfo.boot_path = boot_path;
 
 	sysinfo.sysinfo = sysinfo965;
 
