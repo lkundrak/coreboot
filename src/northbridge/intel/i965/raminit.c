@@ -563,7 +563,7 @@ static void dram_program_timings(const timings_t *const timings)
 	const int tWTR = 0;
 	int i;
 
-	const int tWL = 7; // XXX ambi
+	const int tWL = timings->CAS - 1; //XXX
 	const int tRTP = 0; // 0 = 533, 1 = 666
 	unsigned int tRRD = 3; // dependent on page size!!!
 
@@ -579,8 +579,9 @@ static void dram_program_timings(const timings_t *const timings)
 		//                              xxx 2:0 read to different rank read
 
 		u32 reg = MCHBAR32(CxDRT0_MCHBAR(i));
-		int btb_wtp = tWL + burst_length/2 + timings->tWR;
-		int btb_wtr = tWL + burst_length/2 + tWTR;
+		const int xxxtWL = tWL + 4;
+		int btb_wtp = xxxtWL + burst_length/2 + timings->tWR;
+		int btb_wtr = xxxtWL + burst_length/2 + tWTR;
 
 		reg = (reg & ~(CxDRT0_BtB_WtP_MASK  | CxDRT0_BtB_WtR_MASK)) |
 			((btb_wtp << CxDRT0_BtB_WtP_SHIFT) & CxDRT0_BtB_WtP_MASK) |
@@ -642,9 +643,7 @@ static void dram_program_timings(const timings_t *const timings)
 		reg = (reg & ~(0x03 << 26));
 		reg = (reg & ~(0x07 << 23)) | (((timings->CAS - 3) & 0x07) << 23);
 		reg = (reg & ~(0x7f << 13)) | ((tRFC & 0x7f) << 13);
-		{ const int tWL = timings->CAS - 1; //XXX
 		reg = (reg & ~(0x07 <<  0)) | (((tWL - 2) & 0x07) <<  0);
-		}
 
 		if (i == 0)
 			reg |= 0xf << 7; // reserved?!?!
