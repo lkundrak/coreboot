@@ -378,7 +378,7 @@ enum {
 #define CxDRT3_MCHBAR(x)	(0x121c + (x * 0x0100))
 #define CxDRT4_MCHBAR(x)	(0x1220 + (x * 0x0100))
 #define CxDRT5_MCHBAR(x)	(0x1224 + (x * 0x0100))
-#define CxDRT6_MCHBAR(x)	(0x1228 + (x * 0x0100))
+//#define CxDRT6_MCHBAR(x)	(0x1228 + (x * 0x0100))
 
 /* Clock disable registers (32-bit each) */
 #define CxDCLKDIS_MCHBAR(x)	(0x120c + (x * 0x0100))

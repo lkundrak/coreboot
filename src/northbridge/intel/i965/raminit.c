@@ -394,7 +394,65 @@ static void set_igd_memory_frequencies(const sysinfo_t *const sysinfo)
 		(pci_read_config16(GCFGC_PCIDEV, GCFGC_OFFSET) & ~GCFGC_CD_MASK) |
 		(display_clock_select_from_gfxtype[gfx_idx] << GCFGC_CD_SHIFT));
 }
+#endif
 
+static void configure_dram_control_mode(const timings_t *const timings, const dimminfo_t *const dimms)
+{
+	int ch, r;
+
+	FOR_EACH_CHANNEL(ch) {
+
+// 0100 0000  0000 0000  0000 0010  0000 1010 = 0x4000020a
+//   x 29 IC
+//                    x 16 ACAR
+//                             xxx 10:8 RMS
+//                                   xxx 6:4 SMS
+//                                       x 3 BL
+//                                         xx 1:0 DDR2
+// 0100 0000  0000 0000  0000 0010  0000 1010 = 0x4000020a
+// 0100 0000  0000 0000  0000 0000  0000 0010 = 0x40000002
+//                             xxx       x
+
+		unsigned int mchbar = CxDRC0_MCHBAR(ch);
+		u32 cxdrc = MCHBAR32(mchbar);
+		cxdrc = (cxdrc & ~(0x7 << 8)) | (0x2 << 8);
+		cxdrc = (cxdrc & ~(0x1 << 3)) | (0x1 << 3);
+		MCHBAR32(mchbar) = cxdrc;
+
+// 1011 0001 0000 1110 0001 1000 0000 0000 = 0xb10e1800
+// xxxx 31:28 reserved ???
+//       xxx 26:24 reserved ???
+//                xxxx 19:16 tri-state per rank 3 2 1 0 (0 = populated)
+//                        x 12 cs tri-state
+//                          x 11 addr tri-state
+
+		mchbar = CxDRC1_MCHBAR(ch);
+		cxdrc = MCHBAR32(mchbar);
+		cxdrc = (cxdrc & ~(0xf << 28)) | (0xb << 28);
+		cxdrc = (cxdrc & ~(0x7 << 24)) | (0x1 << 24);
+		cxdrc |= CxDRC1_NOTPOP_MASK;
+		FOR_EACH_POPULATED_RANK_IN_CHANNEL(dimms, ch, r)
+			cxdrc &= ~CxDRC1_NOTPOP(r);
+		cxdrc |= 1 << 12;
+		cxdrc |= 1 << 11;
+		MCHBAR32(mchbar) = cxdrc;
+
+// 0000 1110 0000 0000 0001 0000 0000 = 0x0e001000
+//      xxxx 27:24 odt tri-state 3 2 1 0 (0 = populated)
+//                       x 13 dq buff enable
+//                        x 12 reserved ???
+
+		mchbar = CxDRC2_MCHBAR(ch);
+		cxdrc = MCHBAR32(mchbar);
+		cxdrc |= CxDRC2_NOTPOP_MASK;
+		FOR_EACH_POPULATED_RANK_IN_CHANNEL(dimms, ch, r)
+			cxdrc &= ~CxDRC2_NOTPOP(r);
+		cxdrc |= 1 << 12;
+		MCHBAR32(mchbar) = cxdrc;
+	}
+}
+
+#if 0
 static void configure_dram_control_mode(const timings_t *const timings, const dimminfo_t *const dimms)
 {
 	int ch, r;
@@ -496,6 +554,137 @@ static void dram_powerup(const int resume)
 	}
 #endif
 }
+#endif
+
+static void dram_program_timings(const timings_t *const timings)
+{
+	/* Values are for DDR2. */
+	const int burst_length = 8;
+	const int tWTR = 0;
+	int i;
+
+	const int tWL = 7; // XXX ambi
+	const int tRTP = 0; // 0 = 533, 1 = 666
+	unsigned int tRRD = 3; // dependent on page size!!!
+
+	FOR_EACH_CHANNEL(i) {
+
+		// [lkundrak@odvarok coreboot-x61]$ perl -e '$x=0x34b10461; do { print $x >> 31 } while ($x = ($x << 1) & 0xffffffff); END {print "\n"}'
+		// 00111100101100010000100001000001 == 0x3cb10841
+		//  xxxxx 30:26 0xd write to precharge spacing tWR
+		//         xxxx 23:20 0xb write to read
+		//               xxx 17:15 010b write to different rank read
+		//                   xxxx 13:10 read to wrtie
+		//                         xxx 7:5 read to different rank write
+		//                              xxx 2:0 read to different rank read
+
+		u32 reg = MCHBAR32(CxDRT0_MCHBAR(i));
+		int btb_wtp = tWL + burst_length/2 + timings->tWR;
+		int btb_wtr = tWL + burst_length/2 + tWTR;
+
+		reg = (reg & ~(CxDRT0_BtB_WtP_MASK  | CxDRT0_BtB_WtR_MASK)) |
+			((btb_wtp << CxDRT0_BtB_WtP_SHIFT) & CxDRT0_BtB_WtP_MASK) |
+			((btb_wtr << CxDRT0_BtB_WtR_SHIFT) & CxDRT0_BtB_WtR_MASK);
+
+		reg = (reg & ~(0x7 << 15)) | ((6 - timings->CAS) << 15);
+		reg = (reg & ~(0xf << 10)) | ((timings->CAS - 2) << 10);
+		reg = (reg & ~(0x7 << 5)) | (2 << 5);
+		reg = (reg & ~(0x7 << 0)) | (1 << 0);
+		MCHBAR32(CxDRT0_MCHBAR(i)) = reg;
+
+		// 0000 0001  0110 0000  1000 0100  0100 0010 = 0x01608442
+		//   xx 29:28 tRTP 00 = ddr2/533
+		//        xx  xxx 25:21 tRAS 0x5? (0c=533)
+		//                  x 18 ptp-1 (1,2)
+		//                       x 15 (tRPALL) (8 bank?)
+		//                          x xx 12:10 (tRRD)
+		//                                  xxx 7:5 (tRCD)
+		//                                        xxx 2:0 (tTP)
+		// 0000 0001  0110 0000  1000 0100  0100 0010 = 0x01608442
+		// 0000 0001  0110 0000  0000 0100  0100 0010 = 0x01600442
+
+		reg = MCHBAR32(CxDRT1_MCHBAR(i));
+		reg = (reg & ~(0x03 << 28)) | ((tRTP & 0x03) << 28);
+		reg = (reg & ~(0x1f << 21)) | ((timings->tRAS & 0x1f) << 21);
+		reg = (reg & ~(0x01 << 15)) | (1 << 15); // XXX 8 bank?
+		reg = (reg & ~(0x07 << 10)) | (((tRRD - 2) & 0x07) << 10);
+		reg = (reg & ~(0x07 <<  5)) | (((timings->tRCD - 2) & 0x07) << 5);
+		reg = (reg & ~(0x07 <<  0)) | (((timings->tRP - 2) & 0x07) << 0);
+		MCHBAR32(CxDRT1_MCHBAR(i)) = reg;
+
+		// 0010 0010 0001 1100 0001 0000 0101 0000 = 0x221c1050
+		//       xxx 26:24 must be 010 = 2
+		//             xx xxx 21:17 tFAW
+		//                      xxx 14:12 must be 001 = 1
+		//                            xx xx 9:6 must be 0001 = 1
+		//                                  x xxxx reserved, but 0x1f -> 0x10 ???
+
+		reg = MCHBAR32(CxDRT2_MCHBAR(i));
+		reg = (reg & ~(0x7 << 24)) | (0x2 << 24);
+		reg = (reg & ~(0x1f << 17)) | ((14 & 0x1f) << 17); // table!!!
+//		reg = (reg & ~(0x1f << 17)) | ((timings->tFAW & 0x1f) << 17);
+		reg = (reg & ~(0x7 << 12)) | (0x1 << 12);
+		reg = (reg & ~(0xf <<  6)) | (0x1 <<  6);
+		reg = (reg & ~(0x1f << 0)) | (0x10 << 0);
+		MCHBAR32(CxDRT2_MCHBAR(i)) = reg;
+
+		// 0000 0000  1000 0011  1000 0111  1000 0001 = 0x00838781 CHAN 0
+		// 0000 0000  1000 0011  1000 0001  0000 0001 = 0x00838101 CHAN 1
+		//      xx 27:26 tXS 00 = tRFC + 10
+		//        xx  x 25:23 tCL
+		//               x xxxx  xxx 20:13 tRFC (14) 
+		//                          x xxxx  xxxx x
+		//                                        xxx 2:0 tWL
+
+		int tRFC = 0x1c; // fix negotiation!!!  // 0010101 tRFC 0x1c 28
+		reg = MCHBAR32(CxDRT3_MCHBAR(i));
+
+		reg = (reg & ~(0x03 << 26));
+		reg = (reg & ~(0x07 << 23)) | (((timings->CAS - 3) & 0x07) << 23);
+		reg = (reg & ~(0x7f << 13)) | ((tRFC & 0x7f) << 13);
+		{ const int tWL = timings->CAS - 1; //XXX
+		reg = (reg & ~(0x07 <<  0)) | (((tWL - 2) & 0x07) <<  0);
+		}
+
+		if (i == 0)
+			reg |= 0xf << 7; // reserved?!?!
+
+		MCHBAR32(CxDRT3_MCHBAR(i)) = reg;
+
+		reg = MCHBAR32(CxDRT4_MCHBAR(i));
+		static const u8 timings_by_clock[4][4] = {
+			// xxx finish me!!!
+			/*   800MHz  533MHz  667MHz  400MHz  */
+			{     0x00,   0x07,   0x00,   0x00   },
+			{     0x00,   0x86,   0x00,   0x00   },
+			{     0x00,   0x0a,   0x00,   0x00   },
+			{     0x00,   0x50,   0x00,   0x00   },
+		};
+		const int clk_idx = 2 - timings->mem_clock;
+		reg = (reg & ~(0x01f << 27)) | (timings_by_clock[0][clk_idx] << 27);
+		reg = (reg & ~(0x3ff << 17)) | (timings_by_clock[1][clk_idx] << 17);
+		reg = (reg & ~(0x03f << 10)) | (timings_by_clock[2][clk_idx] << 10);
+		reg = (reg & ~(0x1ff <<  0)) | (timings_by_clock[3][clk_idx] <<  0);
+		MCHBAR32(CxDRT4_MCHBAR(i)) = reg;
+
+		// 0110 0010  1000 0101  0000 0000  0010 0010 = 0x62850022
+		//        xx  xx 25:22 TS delay
+		//               x xxxx  xxxx 20:12 DLL lock timer ----
+		//                                  xxxx 7:4 read diff amp
+		//                                        xx = 2:1 sq sense amp dur
+		// 0110 0010  1001 1001  0000 0000  0010 0100 = 0x62990024
+
+		reg = MCHBAR32(CxDRT5_MCHBAR(i));
+		reg = (reg & ~(0x00f << 22)) | ((burst_length/2 + timings->CAS + 2) << 22);
+		reg = (reg & ~(0x3ff << 12)) | (0x050 << 12);
+		reg = (reg & ~(0x00f <<  4)) | ((timings->CAS - 2) << 4);
+		reg = (reg & ~(0x003 <<  1)) | (0x01 <<  1);
+		MCHBAR32(CxDRT5_MCHBAR(i)) = reg;
+	}
+}
+
+
+#if 0
 static void dram_program_timings(const timings_t *const timings)
 {
 	/* Values are for DDR3. */
@@ -581,6 +770,7 @@ static void dram_program_timings(const timings_t *const timings)
 		MCHBAR32(CxDRT6_MCHBAR(i)) = reg;
 	}
 }
+#endif
 
 static void dram_program_banks(const dimminfo_t *const dimms)
 {
@@ -602,6 +792,29 @@ static void dram_program_banks(const dimminfo_t *const dimms)
 	}
 }
 
+static void odt_setup(const timings_t *const timings, const int sff)
+{
+	/* Values are for DDR3. */
+	int ch;
+
+	FOR_EACH_CHANNEL(ch) {
+// XXX defaults work well for 533. what else?
+		u32 reg = MCHBAR32(CxODT_HIGH(ch));
+		MCHBAR32(CxODT_LOW(ch)) = reg;
+
+// 0110 0000  1001 0010  1000 0111  1000 1000 = 0x60928788
+// 0000 0000  1000 0010  1000 0111  1000 0111 = 0x00828787
+//  xx 30:29     x 20                     xxx 2:0
+		reg = MCHBAR32(CxODT_LOW(ch));
+		reg |= 3 << 29;
+		reg |= 1 << 20;
+		reg = (reg & ~(0xf << 0)) | (8 << 0);
+		MCHBAR32(CxODT_HIGH(ch)) = reg;
+
+	}
+}
+
+#if 0
 static void odt_setup(const timings_t *const timings, const int sff)
 {
 	/* Values are for DDR3. */
@@ -645,7 +858,30 @@ static void odt_setup(const timings_t *const timings, const int sff)
 		MCHBAR32(CxODT_LOW(ch)) = reg;
 	}
 }
+#endif
 
+static void misc_settings(const timings_t *const timings,
+			  const stepping_t stepping)
+{
+	int tRD = 5; // really? check!
+	const int tWL = timings->CAS - 1; //XXX
+
+	MCHBAR32(0x1260) = (MCHBAR32(0x1260) & ~(0xf)) | 1 << 31 | tRD;
+	MCHBAR32(0x1360) = (MCHBAR32(0x1360) & ~(0xf)) | 1 << 31 | tRD;
+
+	MCHBAR8(0x1268) = (MCHBAR8(0x1268) & ~(0xf)) | tWL;
+	MCHBAR8(0x1368) = (MCHBAR8(0x1268) & ~(0xf)) | tWL;
+
+	MCHBAR8(0x12a0) = (MCHBAR8(0x12a0) & ~(0xf)) | 0x2;
+	MCHBAR8(0x13a0) = (MCHBAR8(0x13a0) & ~(0xf)) | 0x2;
+
+	MCHBAR32(0x218) = (MCHBAR32(0x218) & ~((7 << 29) | (7 << 25) | (3 << 22) | (3 << 10))) |
+					       (4 << 29) | (3 << 25) | (0 << 22) | (1 << 10);
+	MCHBAR32(0x220) = (MCHBAR32(0x220) & ~(7 << 16)) | (1 << 21) | (1 << 16);
+	MCHBAR32(0x224) = (MCHBAR32(0x224) & ~(7 <<  8)) | (3 << 8);
+}
+
+#if 0
 static void misc_settings(const timings_t *const timings,
 			  const stepping_t stepping)
 {
@@ -1280,7 +1516,7 @@ void sdram_dump_mchbar_registers(void)
 	int i;
 	printk(BIOS_DEBUG, "Dumping MCHBAR Registers\n");
 
-	for (i=0; i<0xfff; i+=4) {
+	for (i=0; i<0x4000; i+=4) {
 		if (MCHBAR32(i) == 0)
 			continue;
 		printk(BIOS_DEBUG, "0x%04x: 0x%08x\n", i, MCHBAR32(i));
@@ -1298,6 +1534,206 @@ clkcfg1 (void)
 // 3878.387a    .H..    [0000:fff009a2]   MCHBAR: [00000c00] <= 00000332
 // 3878.387b    .H..    [0000:fff009a2]   MCHBAR: [00000c00] => 00000332
 	MCHBAR32(CLKCFG_MCHBAR) &= ~(2 << 16);
+}
+
+static void
+wtf1 (void)
+{
+//38e5.38e6    .H..    [0000:fff00ff0]   MCHBAR: [00001444] => 00000115
+//38e5.38e7    .H..    [0000:fff00ff0]   MCHBAR: [00001444] <= 00001115
+	MCHBAR32(0x1444) |= 0x1000;
+
+//38fe.38ff    .H..    [0000:fff01020]   MCHBAR: [00000400] => 000a0020
+//38fe.3900    .H..    [0000:fff01020]   MCHBAR: [00000400] <= 000e0020
+	MCHBAR32(0x400) |= 0x4000;
+
+//38fe.3901    .H..    [0000:fff01020]   MCHBAR: [00000404] => 2222
+//38fe.3902    .H..    [0000:fff01020]   MCHBAR: [00000404] <= 1111
+	MCHBAR16(0x404) >>= 1;
+
+//38fe.3903    .H..    [0000:fff01020]   MCHBAR: [0000040c] => 0100
+//38fe.3904    .H..    [0000:fff01020]   MCHBAR: [0000040c] <= 2f00
+	MCHBAR16(0x40c) |= 0x2e00;
+
+//38fe.3905    .H..    [0000:fff01020]   MCHBAR: [00000418] => 00000000
+//38fe.3906    .H..    [0000:fff01020]   MCHBAR: [00000418] <= 00040000
+	MCHBAR32(0x418) |= 0x40000;
+
+//38fe.3907    .H..    [0000:fff01020]   MCHBAR: [0000041c] => 22222222
+//38fe.3908    .H..    [0000:fff01020]   MCHBAR: [0000041c] <= 11119999
+	MCHBAR32(0x41c) = 11119999;
+
+//38fe.3909    .H..    [0000:fff01020]   MCHBAR: [000004d0] => 2d
+//38fe.390a    .H..    [0000:fff01020]   MCHBAR: [000004d0] <= 36
+//38fe.390b    .H..    [0000:fff01020]   MCHBAR: [000004d4] => 2d
+//38fe.390c    .H..    [0000:fff01020]   MCHBAR: [000004d4] <= 36
+	MCHBAR32(0x4d0) += 9;
+	MCHBAR32(0x4d4) += 9;
+
+//XXX1
+//
+//38fe.390d    .H..    [0000:fff01020]   MCHBAR: [00000680] <= 4c28a249
+//38fe.390e    .H..    [0000:fff010a4]   MCHBAR: [00000684] <= e38e34d3
+//38fe.390f    .H..    [0000:fff010ad]   MCHBAR: [00000688] <= 3cf3cf38
+//38fe.3910    .H..    [0000:fff010a4]   MCHBAR: [00000698] <= 4c2ca249
+//38fe.3911    .H..    [0000:fff010a4]   MCHBAR: [0000069c] <= e38e34d3
+//38fe.3912    .H..    [0000:fff010ad]   MCHBAR: [000006a0] <= 3cf3cf3c
+//
+//38fe.3913    .H..    [0000:fff010c2]   MCHBAR: [000006b0] <= 00000055
+//38fe.3914    .H..    [0000:fff010c7]   MCHBAR: [000006b4] <= 55000000
+//38fe.3915    .H..    [0000:fff010c7]   MCHBAR: [000006b8] <= 00000000
+//38fe.3916    .H..    [0000:fff010c7]   MCHBAR: [000006bc] <= 00000000
+//
+//
+//YYY1
+//
+//38fe.3917    .H..    [0000:fff0109f]   MCHBAR: [000006c0] <= c8186145
+//38fe.3918    .H..    [0000:fff010a4]   MCHBAR: [000006c4] <= c30c2cb2
+//38fe.3919    .H..    [0000:fff010ad]   MCHBAR: [000006c8] <= 34d34d30
+//38fe.391a    .H..    [0000:fff010a4]   MCHBAR: [000006d8] <= 481c71c6
+//38fe.391b    .H..    [0000:fff010a4]   MCHBAR: [000006dc] <= b2ca28a2
+//38fe.391c    .H..    [0000:fff010ad]   MCHBAR: [000006e0] <= 30c30c30
+//
+//38fe.391d    .H..    [0000:fff010c2]   MCHBAR: [000006f0] <= 00000055
+//38fe.391e    .H..    [0000:fff010c7]   MCHBAR: [000006f4] <= 55000000
+//38fe.391f    .H..    [0000:fff010c7]   MCHBAR: [000006f8] <= 00000000
+//38fe.3920    .H..    [0000:fff010c7]   MCHBAR: [000006fc] <= 00000000
+//
+//YYY1
+//
+//38fe.3921    .H..    [0000:fff010d4]   MCHBAR: [00000700] <= c8186145
+//38fe.3922    .H..    [0000:fff010a4]   MCHBAR: [00000704] <= c30c2cb2
+//38fe.3923    .H..    [0000:fff010ad]   MCHBAR: [00000708] <= 34d34d30
+//38fe.3924    .H..    [0000:fff010a4]   MCHBAR: [00000718] <= 481c71c6
+//38fe.3925    .H..    [0000:fff010a4]   MCHBAR: [0000071c] <= b2ca28a2
+//38fe.3926    .H..    [0000:fff010ad]   MCHBAR: [00000720] <= 30c30c30
+//
+//38fe.3927    .H..    [0000:fff010c2]   MCHBAR: [00000730] <= 00000055
+//38fe.3928    .H..    [0000:fff010c7]   MCHBAR: [00000734] <= 55000000
+//38fe.3929    .H..    [0000:fff010c7]   MCHBAR: [00000738] <= 00000000
+//38fe.392a    .H..    [0000:fff010c7]   MCHBAR: [0000073c] <= 80000000
+//
+//YYY1
+//
+//38fe.392b    .H..    [0000:fff0109f]   MCHBAR: [00000740] <= c8186145
+//38fe.392c    .H..    [0000:fff010a4]   MCHBAR: [00000744] <= c30c2cb2
+//38fe.392d    .H..    [0000:fff010ad]   MCHBAR: [00000748] <= 34d34d30
+//38fe.392e    .H..    [0000:fff010a4]   MCHBAR: [00000758] <= 481c71c6
+//38fe.392f    .H..    [0000:fff010a4]   MCHBAR: [0000075c] <= b2ca28a2
+//38fe.3930    .H..    [0000:fff010ad]   MCHBAR: [00000760] <= 30c30c30
+//
+//38fe.3931    .H..    [0000:fff010c2]   MCHBAR: [00000770] <= 00000055
+//38fe.3932    .H..    [0000:fff010c7]   MCHBAR: [00000774] <= 55000000
+//38fe.3933    .H..    [0000:fff010c7]   MCHBAR: [00000778] <= 00000000
+//38fe.3934    .H..    [0000:fff010c7]   MCHBAR: [0000077c] <= 80000000
+//
+//ZZZ1
+//
+//38fe.3935    .H..    [0000:fff010d4]   MCHBAR: [00000780] <= ca28a249
+//38fe.3936    .H..    [0000:fff010a4]   MCHBAR: [00000784] <= 24903cb2
+//38fe.3937    .H..    [0000:fff010ad]   MCHBAR: [00000788] <= 4d34d349
+//38fe.3938    .H..    [0000:fff010a4]   MCHBAR: [00000798] <= cd34d30c
+//38fe.3939    .H..    [0000:fff010a4]   MCHBAR: [0000079c] <= 349140f3
+//38fe.393a    .H..    [0000:fff010ad]   MCHBAR: [000007a0] <= 5d759655
+//
+//38fe.393b    .H..    [0000:fff010c2]   MCHBAR: [000007b0] <= 00000088
+//38fe.393c    .H..    [0000:fff010c7]   MCHBAR: [000007b4] <= 88000000
+//38fe.393d    .H..    [0000:fff010c7]   MCHBAR: [000007b8] <= 00000000
+//38fe.393e    .H..    [0000:fff010c7]   MCHBAR: [000007bc] <= 00000000
+//
+//ZZZ1
+//
+//38fe.393f    .H..    [0000:fff0109f]   MCHBAR: [000007c0] <= ca28a249
+//38fe.3940    .H..    [0000:fff010a4]   MCHBAR: [000007c4] <= 24903cb2
+//38fe.3941    .H..    [0000:fff010ad]   MCHBAR: [000007c8] <= 4d34d349
+//38fe.3942    .H..    [0000:fff010a4]   MCHBAR: [000007d8] <= cd34d30c
+//38fe.3943    .H..    [0000:fff010a4]   MCHBAR: [000007dc] <= 349140f3
+//38fe.3944    .H..    [0000:fff010ad]   MCHBAR: [000007e0] <= 5d759655
+//
+//38fe.3945    .H..    [0000:fff010c2]   MCHBAR: [000007f0] <= 00000088
+//38fe.3946    .H..    [0000:fff010c7]   MCHBAR: [000007f4] <= 88000000
+//38fe.3947    .H..    [0000:fff010c7]   MCHBAR: [000007f8] <= 00000000
+//38fe.3948    .H..    [0000:fff010c7]   MCHBAR: [000007fc] <= 00000000
+//
+//AAA1
+//
+//38fe.3949    .H..    [0000:fff010d4]   MCHBAR: [00000800] <= ca28a249
+//38fe.394a    .H..    [0000:fff010a4]   MCHBAR: [00000804] <= 24903cb2
+//38fe.394b    .H..    [0000:fff010ad]   MCHBAR: [00000808] <= 4d34d349
+//38fe.394c    .H..    [0000:fff010a4]   MCHBAR: [00000818] <= ca28a249
+//38fe.394d    .H..    [0000:fff010a4]   MCHBAR: [0000081c] <= 140e34b2
+//38fe.394e    .H..    [0000:fff010ad]   MCHBAR: [00000820] <= 4d349245
+//
+//38fe.394f    .H..    [0000:fff010c2]   MCHBAR: [00000830] <= 00000088
+//38fe.3950    .H..    [0000:fff010c7]   MCHBAR: [00000834] <= 88000000
+//38fe.3951    .H..    [0000:fff010c7]   MCHBAR: [00000838] <= 00000000
+//38fe.3952    .H..    [0000:fff010c7]   MCHBAR: [0000083c] <= 00000000
+//
+//
+//XXX1
+//
+//38fe.3953    .H..    [0000:fff0109f]   MCHBAR: [00000840] <= 4c28a249
+//38fe.3954    .H..    [0000:fff010a4]   MCHBAR: [00000844] <= e38e34d3
+//38fe.3955    .H..    [0000:fff010ad]   MCHBAR: [00000848] <= 3cf3cf38
+//38fe.3956    .H..    [0000:fff010a4]   MCHBAR: [00000858] <= 4c2ca249
+//38fe.3957    .H..    [0000:fff010a4]   MCHBAR: [0000085c] <= e38e34d3
+//38fe.3958    .H..    [0000:fff010ad]   MCHBAR: [00000860] <= 3cf3cf3c
+//
+//38fe.3959    .H..    [0000:fff010c2]   MCHBAR: [00000870] <= 00000055
+//38fe.395a    .H..    [0000:fff010c7]   MCHBAR: [00000874] <= 55000000
+//38fe.395b    .H..    [0000:fff010c7]   MCHBAR: [00000878] <= 00000000
+//38fe.395c    .H..    [0000:fff010c7]   MCHBAR: [0000087c] <= 00000000
+//
+//YYY1
+//
+//38fe.395d    .H..    [0000:fff010d4]   MCHBAR: [00000880] <= c8186145
+//38fe.395e    .H..    [0000:fff010a4]   MCHBAR: [00000884] <= c30c2cb2
+//38fe.395f    .H..    [0000:fff010ad]   MCHBAR: [00000888] <= 34d34d30
+//38fe.3960    .H..    [0000:fff010a4]   MCHBAR: [00000898] <= 481c71c6
+//38fe.3961    .H..    [0000:fff010a4]   MCHBAR: [0000089c] <= b2ca28a2
+//38fe.3962    .H..    [0000:fff010ad]   MCHBAR: [000008a0] <= 30c30c30
+//
+//38fe.3963    .H..    [0000:fff010c2]   MCHBAR: [000008b0] <= 00000055
+//38fe.3964    .H..    [0000:fff010c7]   MCHBAR: [000008b4] <= 55000000
+//38fe.3965    .H..    [0000:fff010c7]   MCHBAR: [000008b8] <= 00000000
+//38fe.3966    .H..    [0000:fff010c7]   MCHBAR: [000008bc] <= 00000000
+
+#define MCH10(a,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9) \
+	do { \
+	MCHBAR32(a + 0x00) = v0;  \
+	MCHBAR32(a + 0x04) = v1;  \
+	MCHBAR32(a + 0x08) = v2;  \
+	MCHBAR32(a + 0x18) = v3;  \
+	MCHBAR32(a + 0x1c) = v4;  \
+	MCHBAR32(a + 0x20) = v5;  \
+	MCHBAR32(a + 0x30) = v6;  \
+	MCHBAR32(a + 0x34) = v7;  \
+	MCHBAR32(a + 0x38) = v8;  \
+	MCHBAR32(a + 0x3c) = v9;  \
+	} while (0)
+
+MCH10(0x0680, 0x4c28a249, 0xe38e34d3, 0x3cf3cf38, 0x4c2ca249, 0xe38e34d3, 0x3cf3cf3c, 0x00000055, 0x55000000, 0x00000000, 0x00000000);
+MCH10(0x06c0, 0xc8186145, 0xc30c2cb2, 0x34d34d30, 0x481c71c6, 0xb2ca28a2, 0x30c30c30, 0x00000055, 0x55000000, 0x00000000, 0x00000000);
+MCH10(0x0700, 0xc8186145, 0xc30c2cb2, 0x34d34d30, 0x481c71c6, 0xb2ca28a2, 0x30c30c30, 0x00000055, 0x55000000, 0x00000000, 0x00000000);
+MCH10(0x0740, 0xc8186145, 0xc30c2cb2, 0x34d34d30, 0x481c71c6, 0xb2ca28a2, 0x30c30c30, 0x00000055, 0x55000000, 0x00000000, 0x00000000);
+MCH10(0x0780, 0xca28a249, 0x24903cb2, 0x4d34d349, 0xcd34d30c, 0x349140f3, 0x5d759655, 0x00000088, 0x88000000, 0x00000000, 0x00000000);
+MCH10(0x07c0, 0xca28a249, 0x24903cb2, 0x4d34d349, 0xcd34d30c, 0x349140f3, 0x5d759655, 0x00000088, 0x88000000, 0x00000000, 0x00000000);
+MCH10(0x0800, 0xca28a249, 0x24903cb2, 0x4d34d349, 0xca28a249, 0x140e34b2, 0x4d349245, 0x00000088, 0x88000000, 0x00000000, 0x00000000);
+MCH10(0x0840, 0x4c28a249, 0xe38e34d3, 0x3cf3cf38, 0x4c2ca249, 0xe38e34d3, 0x3cf3cf3c, 0x00000055, 0x55000000, 0x00000000, 0x00000000);
+MCH10(0x0880, 0xc8186145, 0xc30c2cb2, 0x34d34d30, 0x481c71c6, 0xb2ca28a2, 0x30c30c30, 0x00000055, 0x55000000, 0x00000000, 0x00000000);
+
+#undef MCH10
+
+//38fe.396d    .H..    [0000:fff010dc]   MCHBAR: [00000414] <= 00
+//38fe.396e    .H..    [0000:fff010dc]   MCHBAR: [00000418] => 00040000
+//38fe.396f    .H..    [0000:fff010dc]   MCHBAR: [00000418] <= 00040000
+//38fe.3970    .H..    [0000:fff010dc]   MCHBAR: [00000400] => 20
+//3971.3972    .H..    [0000:fff010dc]   PCI: 0:00.0 [008] => 03          Revision identification
+//3973.3974    .H..    [0000:fff01119]   MCHBAR: [00000400] <= 21
+//3976.3977    .H..    [0000:fff01d38]   POST: *** ff24 ***
+	MCHBAR8(0x414);
+	MCHBAR32(0x418) |= 0;
+	MCHBAR8(0x400) |= 1;
 }
 
 void raminit(sysinfo_t *const sysinfo, const int s3resume)
@@ -1393,11 +1829,14 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	}
 #endif
 
+	wtf1 ();
+
+
 #if 0
 	/* Program system memory frequency. */
 	set_system_memory_frequency(timings);
 	/* Program IGD memory frequency. */
-	set_igd_memory_frequencies(sysinfo);
+//	set_igd_memory_frequencies(sysinfo);
 
 	/* Configure DRAM control mode for populated channels. */
 	configure_dram_control_mode(timings, dimms);
@@ -1410,15 +1849,24 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	/* Program DRAM timings. */
 	dram_program_timings(timings);
 	/* Program number of banks. */
+#endif
 	dram_program_banks(dimms);
+//XXX
+	dram_program_timings(timings);
+	configure_dram_control_mode(timings, dimms);
+
+
+#if 0 // TESTEED,works as is
 	/* Enable DRAM clock pairs for populated DIMMs. */
 	FOR_EACH_POPULATED_CHANNEL(dimms, ch)
 		MCHBAR32(CxDCLKDIS_MCHBAR(ch)) |= CxDCLKDIS_ENABLE;
+#endif
 
 	/* Enable On-Die Termination. */
-	odt_setup(timings, sff);
+	odt_setup(timings, 0);
 	/* Miscellaneous settings. */
 	misc_settings(timings, sysinfo->stepping);
+#if 0
 	/* Program clock crossing registers. */
 	clock_crossing_setup(timings->fsb_clock, timings->mem_clock, dimms);
 	/* Program egress VC1 timings. */
@@ -1478,4 +1926,5 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	raminit_thermal(sysinfo);
 	init_igd(sysinfo);
 #endif
+	sdram_dump_mchbar_registers();
 }

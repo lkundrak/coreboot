@@ -71,6 +71,18 @@ main (int argc, const char *argv[])
 		return 1;
 	}
 
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x0218) = 0xA4008000;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x0220) = 0x00000264;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x1210) = *(u32 *)((void *)DEFAULT_MCHBAR + 0x1310) = 0x34B10461;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x1214) = *(u32 *)((void *)DEFAULT_MCHBAR + 0x1314) = 0x11E08463;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x1218) = *(u32 *)((void *)DEFAULT_MCHBAR + 0x1318) = 0x2200105F;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x121c) = *(u32 *)((void *)DEFAULT_MCHBAR + 0x131c) = 0x01056101;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x1220) = *(u32 *)((void *)DEFAULT_MCHBAR + 0x1320) = 0x29503C32;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x1230) = *(u32 *)((void *)DEFAULT_MCHBAR + 0x1330) = 0x40000002;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x1248) = *(u32 *)((void *)DEFAULT_MCHBAR + 0x1348) = 0x20002020;
+	*(u32 *)((void *)DEFAULT_MCHBAR + 0x124c) = *(u32 *)((void *)DEFAULT_MCHBAR + 0x134c) = 0x00828787;
+	*(u8  *)((void *)DEFAULT_MCHBAR + 0x1268) = *(u8  *)((void *)DEFAULT_MCHBAR + 0x1368) = 0x01;
+
 	/* DIMM1 */
 	if (argc > 1) {
 		int fd = open (argv[1], O_RDONLY);
@@ -105,4 +117,8 @@ main (int argc, const char *argv[])
 	sysinfo.spd_map[0] = 0x50;
 	sysinfo.spd_map[2] = 0x51;
 	raminit(&sysinfo, 0);
+
+
+printk (BIOS_SPEW, "=== The End. ===\n");
+
 }

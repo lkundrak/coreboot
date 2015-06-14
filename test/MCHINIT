@@ -100,6 +100,7 @@ L pre_jedec_settings1()
 38b2.38ba    .H..    [0000:fff01dec]   MCHBAR: [0000023c] <= 03000000
 38bb.38bc    .H..    [0000:fff01d38]   POST: *** ff22 ***
 
+F prejedec_memory_map
 F XXX11 program_memory_map()
 38c0.38c1    .H..    [0000:fff012e3]   MCHBAR: [00001200] <= 0004	C0DRB01 - Channel 0 DRAM Rank Boundary 0/1
 38c0.38c2    .H..    [0000:fff0130f]   MCHBAR: [00001208] <= 02		C0DRA - Channel 0 DRAM Rank 0,1 Attribute
@@ -122,8 +123,11 @@ F XXX11 program_memory_map()
 38dc.38dd    .H..    [0000:fff01d38]   POST: *** ff23 ***
 
 F memory_io_init()?????
+F wtf1
 38e5.38e6    .H..    [0000:fff00ff0]   MCHBAR: [00001444] => 00000115
 38e5.38e7    .H..    [0000:fff00ff0]   MCHBAR: [00001444] <= 00001115
+
+F rcomp_initialization() xxx
 38e5.38e8    .H..    [0000:fff00ff0]   MCHBAR: [00000400] => 00080000
 38e5.38e9    .H..    [0000:fff00ff0]   MCHBAR: [00000400] <= 000a0020
 38ea.38eb    .H..    [0000:fff00ff0]   PCI: 0:00.0 [008] => 03		Revision identification
