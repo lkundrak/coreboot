@@ -379,6 +379,7 @@ F memory_io_init()???
 3a6f.3a7b    .H..    [0000:fff0116a]   MCHBAR: [0000142c] <= 8b
 3a6f.3a7c    .H..    [0000:fff0116a]   MCHBAR: [00001438] => 00300000
 3a6f.3a7d    .H..    [0000:fff0116a]   MCHBAR: [00001438] <= 00000000
+F ddr2_write_io_init
 3a6f.3a7e    .H..    [0000:fff0116a]   MCHBAR: [00001490] <= 00002121
 3a6f.3a7f    .H..    [0000:fff0116a]   MCHBAR: [00001590] <= 00002121
 3a6f.3a81    .H..    [0000:fff011ef]   MCHBAR: [00001494] <= 00002121
@@ -395,6 +396,7 @@ F memory_io_init()???
 3a6f.3a8c    .H..    [0000:fff011ef]   MCHBAR: [000015a8] <= 00002121
 3a6f.3a8d    .H..    [0000:fff011ef]   MCHBAR: [000014ac] <= 00002121
 3a6f.3a8e    .H..    [0000:fff011ef]   MCHBAR: [000015ac] <= 00002121
+
 3a6f.3a92    .H..    [0000:fff01204]   MCHBAR: [00001484] => 01
 3a6f.3a93    .H..    [0000:fff01204]   MCHBAR: [00001484] <= 00
 3a6f.3a95    .H..    [0000:fff0121b]   MCHBAR: [00001584] => 01

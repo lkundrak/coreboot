@@ -13,8 +13,12 @@ while (<F>) {
 
 open (F, $ARGV[1]) or die "$ARGV[1]: $!";
 while (<F>) {
+	if (/Dumping MCHBAR Registers/) {
+		$regs{$_}->[1] = 0 foreach keys %regs;
+		next;
+	}
 	/^0x(.{4}): (0x.{8})$/ or next;
-	$regs{$base} ||= [0, 0];
+	$regs{hex $1} or next;
 	$regs{hex $1}->[1] = hex $2;
 }
 

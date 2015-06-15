@@ -1143,6 +1143,9 @@ static void ddr3_select_clock_mux(const mem_clock_t ddr3clock,
 					((( clk1067 && !cardF[ch])?3:2) << 11) | mixed;
 	}
 }
+#endif
+
+#if 0
 static void ddr3_write_io_init(const mem_clock_t ddr3clock,
 			       const dimminfo_t *const dimms,
 			       const stepping_t stepping,
@@ -1242,7 +1245,117 @@ static void ddr3_read_io_init(const mem_clock_t ddr3clock,
 		}
 	}
 }
+#endif
 
+static void memory_io_init(const mem_clock_t ddr3clock,
+			   const dimminfo_t *const dimms,
+			   const stepping_t stepping,
+			   const int sff)
+{
+	u32 tmp;
+
+#if 0
+	if (stepping < STEPPING_B1)
+		die("Stepping <B1 unsupported in "
+			"system-memory i/o initialization.\n");
+#endif
+
+	tmp = MCHBAR32(0x1400);
+#if 0
+// nothing like that needed; everything good as it is...
+	tmp &= ~(3<<13);
+	tmp |= (1<<9) | (1<<13);
+#endif
+	MCHBAR32(0x1400) = tmp;
+
+//	MCHBAR32(0x1440) &= ~1;
+// 0000 0000 0000 0000 0000 0000 0011 1110 = 0x0000003e
+// 0000 0000 0000 0000 0000 0000 0010 1100 = 0x0000002c
+	MCHBAR32(0x1440) |= (1 << 4) | (1 << 1);
+
+// 1100 0000  0000 0000  0100 0001  1100 0000 = 0xc00041c0
+// 1100 0000  0000 0000  0100 0001  1000 0000 = 0xc0004180 // 1434 is magic -- not a final value here!
+// 0000 0000  0000 0000  0000 0001  0000 0000 = 0x00000100
+// xx                     x         x 7 DDR2 in orig
+//                                   x DRAM powerup XXX dram_powerup()
+
+	MCHBAR32(0x1434) |= (3 << 30) | (1 << 14) | (1 << 7);
+	tmp = MCHBAR32(0x140c);
+	tmp = (tmp & ~(0xf << 8)) | (1 << 8); // XXX clock freq dependent
+	MCHBAR32(0x140c) = tmp;
+
+// 0000 0001  0001 1010  0000 0000  0000 0000 = 0x011a0000 // 1414 is magic, final value in raminit_receive_enable_calibration()
+// 0000 0001  0000 1111  0000 0000  0000 0000 = 0x010f0000
+//               x 20
+//                  x 18
+//                    x 16
+
+	tmp = MCHBAR32(0x1414);
+	tmp = (tmp & ~(0xf << 16)) | (1 << 20) | (10 << 16); // XXX clock freq dependent?
+	MCHBAR32(0x1414) = tmp;
+
+	MCHBAR32(0x1418) &= ~((1<<0) | (1<<8) | (1<<16) | (1<<24));
+	MCHBAR32(0x141c) &= ~((1<<0) | (1<<8) | (1<<16) | (1<<24));
+
+	//MCHBAR32(0x1428) |= 1<<14; // nic take
+
+// 1000 0111 = 0x87
+// 1000 1011 = 0x8b
+
+	tmp = MCHBAR32(0x142c);
+	tmp = (tmp & ~0xf) | 0xb; /// XXX clock freq dependent?
+	MCHBAR32(0x142c) = tmp;
+
+	tmp = MCHBAR32(0x1438);
+	tmp &= ~(3 << 20);
+	MCHBAR32(0x1438) = tmp;
+
+#if 0
+
+	tmp = MCHBAR32(0x400);
+	tmp &= ~((3 << 4) | (3 << 16) | (3 << 30));
+	tmp |= (2 << 4) | (2 << 16);
+	MCHBAR32(0x400) = tmp;
+
+	MCHBAR32(0x404) &= ~(0xf << 20);
+
+	MCHBAR32(0x40c) &= ~(1 << 6);
+
+	tmp = MCHBAR32(0x410);
+	tmp &= ~(7 << 28);
+	tmp |= 2 << 28;
+	MCHBAR32(0x410) = tmp;
+
+	tmp = MCHBAR32(0x41c);
+	tmp &= ~0x77;
+	tmp |= 0x11;
+	MCHBAR32(0x41c) = tmp;
+
+	ddr3_select_clock_mux(ddr3clock, dimms, stepping);
+
+	ddr3_write_io_init(ddr3clock, dimms, stepping, sff);
+
+	ddr3_read_io_init(ddr3clock, dimms, sff);
+#endif
+
+	// ddr2_write_io_init
+	MCHBAR32(0x1490) = MCHBAR32(0x1590) = 0x00002121;
+	MCHBAR32(0x1494) = MCHBAR32(0x1594) = 0x00002121;
+	MCHBAR32(0x1498) = MCHBAR32(0x1598) = 0x00002121;
+	MCHBAR32(0x149c) = MCHBAR32(0x159c) = 0x00002121;
+	MCHBAR32(0x14a0) = MCHBAR32(0x15a0) = 0x00002121;
+	MCHBAR32(0x14a4) = MCHBAR32(0x15a4) = 0x00002121;
+	MCHBAR32(0x14a8) = MCHBAR32(0x15a8) = 0x00002121;
+	MCHBAR32(0x14ac) = MCHBAR32(0x15ac) = 0x00002121;
+
+	MCHBAR32(0x1484) &= ~1;
+	MCHBAR32(0x1584) &= ~1;
+
+	// 1434 final value
+	MCHBAR32(0x1434) |= (1 << 6);
+}
+
+#if 0
 static void memory_io_init(const mem_clock_t ddr3clock,
 			   const dimminfo_t *const dimms,
 			   const stepping_t stepping,
@@ -1742,8 +1855,10 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 
 #if 0
 	const int sff = sysinfo->gfx_type == GMCH_GS45;
+#endif
 
 	int ch;
+#if 0
 	u8 reg8;
 #endif
 
@@ -1865,14 +1980,23 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	odt_setup(timings, 0);
 	/* Miscellaneous settings. */
 	misc_settings(timings, sysinfo->stepping);
+
+///FFF
+	/* Enable DRAM clock pairs for populated DIMMs. */
+	FOR_EACH_POPULATED_CHANNEL(dimms, ch)
+		MCHBAR32(CxDCLKDIS_MCHBAR(ch)) |= CxDCLKDIS_ENABLE;
 #if 0
 	/* Program clock crossing registers. */
 	clock_crossing_setup(timings->fsb_clock, timings->mem_clock, dimms);
 	/* Program egress VC1 timings. */
 	vc1_program_timings(timings->fsb_clock);
-	/* Perform system-memory i/o initialization. */
-	memory_io_init(timings->mem_clock, dimms, sysinfo->stepping, sff);
+#endif
 
+	/* Perform system-memory i/o initialization. */
+	//memory_io_init(timings->mem_clock, dimms, sysinfo->stepping, sff);
+	memory_io_init(timings->mem_clock, dimms, sysinfo->stepping, 0);
+
+#if 0
 	/* Initialize memory map with dummy values of 128MB per rank with a
 	   page size of 4KB. This makes the JEDEC initialization code easier. */
 	prejedec_memory_map(dimms, timings->channel_mode);
