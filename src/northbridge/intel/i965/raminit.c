@@ -1351,8 +1351,21 @@ static void memory_io_init(const mem_clock_t ddr3clock,
 	MCHBAR32(0x1484) &= ~1;
 	MCHBAR32(0x1584) &= ~1;
 
+//3a98.3a99    .H..    [0000:fff01d38]   POST: *** ff30 ***
+
+//3a9c.3a9d    .H..    [0000:fff01239]   MCHBAR: [000014f0] => 00810000
+//3a9c.3a9e    .H..    [0000:fff01239]   MCHBAR: [000014f0] <= 00810300
+//3a9c.3aa1    .H..    [0000:fff01245]   MCHBAR: [000015f0] => 00810000
+//3a9c.3aa2    .H..    [0000:fff01245]   MCHBAR: [000015f0] <= 00810300
+
+	/* XXX write pointer operation */
+	MCHBAR32(0x14f0) |= (3 << 8);
+	MCHBAR32(0x15f0) |= (3 << 8);
+
 	// 1434 final value
 	MCHBAR32(0x1434) |= (1 << 6);
+
+//3aa6.3aa7    .H..    [0000:fff01d38]   POST: *** ff31 ***
 }
 
 #if 0
@@ -1655,9 +1668,13 @@ wtf1 (void)
 //38e5.38e7    .H..    [0000:fff00ff0]   MCHBAR: [00001444] <= 00001115
 	MCHBAR32(0x1444) |= 0x1000;
 
+//38e5.38e8    .H..    [0000:fff00ff0]   MCHBAR: [00000400] => 00080000
+//38e5.38e9    .H..    [0000:fff00ff0]   MCHBAR: [00000400] <= 000a0020
+	MCHBAR32(0x400) |= 0x20020;
+
 //38fe.38ff    .H..    [0000:fff01020]   MCHBAR: [00000400] => 000a0020
 //38fe.3900    .H..    [0000:fff01020]   MCHBAR: [00000400] <= 000e0020
-	MCHBAR32(0x400) |= 0x4000;
+	MCHBAR32(0x400) |= 0x40000;
 
 //38fe.3901    .H..    [0000:fff01020]   MCHBAR: [00000404] => 2222
 //38fe.3902    .H..    [0000:fff01020]   MCHBAR: [00000404] <= 1111
@@ -1843,9 +1860,9 @@ MCH10(0x0880, 0xc8186145, 0xc30c2cb2, 0x34d34d30, 0x481c71c6, 0xb2ca28a2, 0x30c3
 //3971.3972    .H..    [0000:fff010dc]   PCI: 0:00.0 [008] => 03          Revision identification
 //3973.3974    .H..    [0000:fff01119]   MCHBAR: [00000400] <= 21
 //3976.3977    .H..    [0000:fff01d38]   POST: *** ff24 ***
-	MCHBAR8(0x414);
+	MCHBAR8(0x414) = 0;
 	MCHBAR32(0x418) |= 0;
-	MCHBAR8(0x400) |= 1;
+	MCHBAR8(0x400) |= 1; // 0x400 is magic -- the last bit disappears
 }
 
 void raminit(sysinfo_t *const sysinfo, const int s3resume)
@@ -1981,11 +1998,10 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	/* Miscellaneous settings. */
 	misc_settings(timings, sysinfo->stepping);
 
-///FFF
+#if 0
 	/* Enable DRAM clock pairs for populated DIMMs. */
 	FOR_EACH_POPULATED_CHANNEL(dimms, ch)
 		MCHBAR32(CxDCLKDIS_MCHBAR(ch)) |= CxDCLKDIS_ENABLE;
-#if 0
 	/* Program clock crossing registers. */
 	clock_crossing_setup(timings->fsb_clock, timings->mem_clock, dimms);
 	/* Program egress VC1 timings. */
@@ -1995,6 +2011,20 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	/* Perform system-memory i/o initialization. */
 	//memory_io_init(timings->mem_clock, dimms, sysinfo->stepping, sff);
 	memory_io_init(timings->mem_clock, dimms, sysinfo->stepping, 0);
+
+	/* Enable DRAM clock pairs for populated DIMMs. */
+	FOR_EACH_POPULATED_CHANNEL(dimms, ch)
+		MCHBAR32(CxDCLKDIS_MCHBAR(ch)) |= CxDCLKDIS_ENABLE;
+
+//3ab0.3ab1    .H..    [0000:fff01d38]   POST: *** ff32 ***
+//3ab6.3ab7    .H..    [0000:fff01edd]   MCHBAR: [00000400] => 20
+	while (MCHBAR32(0x400) & 1) {}
+//3ab6.3abb    .H..    [0000:fff01ee5]   MCHBAR: [00000400] => 000e0020
+//3ab6.3abc    .H..    [0000:fff01ee5]   MCHBAR: [00000400] <= 000c0000
+	MCHBAR32(0x400) &= 0x20020;
+//3abd.3abe    .H..    [0000:fff01d38]   POST: *** ff33 ***
+	
+
 
 #if 0
 	/* Initialize memory map with dummy values of 128MB per rank with a

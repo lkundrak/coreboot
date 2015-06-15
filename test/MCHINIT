@@ -126,8 +126,7 @@ F memory_io_init()?????
 F wtf1
 38e5.38e6    .H..    [0000:fff00ff0]   MCHBAR: [00001444] => 00000115
 38e5.38e7    .H..    [0000:fff00ff0]   MCHBAR: [00001444] <= 00001115
-
-F rcomp_initialization() xxx
+F not really rcomp_initialization() xxx
 38e5.38e8    .H..    [0000:fff00ff0]   MCHBAR: [00000400] => 00080000
 38e5.38e9    .H..    [0000:fff00ff0]   MCHBAR: [00000400] <= 000a0020
 38ea.38eb    .H..    [0000:fff00ff0]   PCI: 0:00.0 [008] => 03		Revision identification
@@ -425,8 +424,6 @@ F main()  Enable DRAM clock pairs for populated DIMMs.
 
 
 F jedec_init()???
-
-
 3acb.3acc    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00000000	DCC - DRAM Channel Control
 3acb.3acd    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00010000
 3acb.3ace    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00010000
