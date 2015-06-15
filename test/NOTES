@@ -1,0 +1,80 @@
+#### lua replay.lua <LOG |grep out |egrep -v $(awk '{print $1}' NOTES |xargs echo |sed 's/ /|/g')
+
+0cf8	PCI
+0cfc
+0cfd
+0cfe
+0cff
+
+1100	SMBus SMBUS_IO_BASE to SMB_BASE of 1f.3
+1101
+1102
+1103
+1104
+1105
+
+1180	1f.0:48 - 00:01	GPIO Base Address (1180 - 64 bytes)
+1184
+118c
+11ac
+11b0
+11b4
+11b8
+
+15e2	1f.0:84 - 15e0-15ef forwarded to LPC
+15ec
+15ee
+
+1622	1f.0:80 - 1600-167f forwarded to LPC
+1623
+1628
+164c
+164e	LPC SuperIO
+164f
+
+1680	1f.0:82 - forwarded to LPC, GPIO BASE
+
+002e	DLPC SuperIO
+002f
+
+0080	Debug
+00ed	delay, alternate diagnostic
+
+0021	PIC
+00a1	PIC
+04d0
+04d1
+
+0040	timer
+0041
+0042
+0043
+
+0061	ps/2 ec
+0062
+
+0070	cmos nvram
+0071
+0072
+0073
+
+0378	pnp 2e:01
+
+0092	dma
+000d
+00da
+
+03d8	vga
+03b8	vga
+
+1030	acpi
+1004
+
+1072	tco
+
+
+---
+
+
+[lkundrak@odvarok simba]$ for i in $(awk '/^0x/ {print $1}' vanillamch 512m |sort |uniq); do V=$(awk "/^$i/ {print \$NF}" vanillamch); P=$(awk "/^$i/ {print \$NF}" 512m); [ "$V" ] || V=0x--------; [ "$P" ] || P=0x--------; if [ "$V" = "$P" ]; then S="same"; else S=""; fi; echo "$i $V $P $S" ; done  |less >COMPARE
+
