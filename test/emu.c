@@ -106,6 +106,7 @@ main (int argc, const char *argv[])
 	memset(&sysinfo, 0, sizeof(sysinfo));
 	sysinfo.spd_map[0] = 0x50;
 	sysinfo.spd_map[2] = 0x51;
+	sysinfo.ggc = 2;
 	raminit(&sysinfo, 0);
 
 

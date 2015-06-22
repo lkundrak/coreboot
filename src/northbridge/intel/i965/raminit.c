@@ -419,7 +419,7 @@ static void configure_dram_control_mode(const timings_t *const timings, const di
 		cxdrc = (cxdrc & ~(0x1 << 3)) | (0x1 << 3);
 		MCHBAR32(mchbar) = cxdrc;
 
-// 1011 0001 0000 1110 0001 1000 0000 0000 = 0xb10e1800
+// 0000 0000 0000 1110 0001 1000 0000 0000 = 0x000e1800
 // xxxx 31:28 reserved ???
 //       xxx 26:24 reserved ???
 //                xxxx 19:16 tri-state per rank 3 2 1 0 (0 = populated)
@@ -428,8 +428,6 @@ static void configure_dram_control_mode(const timings_t *const timings, const di
 
 		mchbar = CxDRC1_MCHBAR(ch);
 		cxdrc = MCHBAR32(mchbar);
-		cxdrc = (cxdrc & ~(0xf << 28)) | (0xb << 28);
-		cxdrc = (cxdrc & ~(0x7 << 24)) | (0x1 << 24);
 		cxdrc |= CxDRC1_NOTPOP_MASK;
 		FOR_EACH_POPULATED_RANK_IN_CHANNEL(dimms, ch, r)
 			cxdrc &= ~CxDRC1_NOTPOP(r);
@@ -968,6 +966,7 @@ static void vc1_program_timings(const fsb_clock_t fsb)
 /* @prejedec if not zero, set rank size to 128MB and page size to 4KB. */
 static void program_memory_map(const dimminfo_t *const dimms, const channel_mode_t mode, const int prejedec, u16 ggc)
 {
+/// XXX all need inspection
 	int ch, r;
 
 	/* Program rank boundaries (CxDRBy). */
@@ -1552,7 +1551,50 @@ static void ddr3_calibrate_zq(void) {
 
 	MCHBAR32(DCC_MCHBAR) |= (7 << 16); /* Normal operation */
 }
+#endif
 
+static void post_jedec_sequence(const int cores) {
+#if 0
+	const int quadcore = cores == 4;
+
+#endif
+
+	// CxAIT
+	MCHBAR32(0x1250) = 0x6c4;
+	MCHBAR32(0x1350) = 0x6c4;
+	MCHBAR32(0x1254) = 0x871a066d;
+	MCHBAR32(0x1354) = 0x871a066d;
+	MCHBAR32(0x0040) &= ~(1 << 1);
+
+	MCHBAR32(0x0230) &= ~(3 << 1);
+	MCHBAR32(0x0230) |= 1 << 15;
+	MCHBAR32(0x0230) &= ~(1 << 19);
+
+	MCHBAR32(0x0238) |= 1 << 26;
+	MCHBAR32(0x0238) &= ~(3 << 24);
+	MCHBAR32(0x0238) |= 1 << 23;
+	MCHBAR32(0x0238) = (MCHBAR32(0x238) & ~(7 << 20)) | (3 << 20);
+	MCHBAR32(0x0238) = (MCHBAR32(0x238) & ~(7 << 17)) | (6 << 17);
+	MCHBAR32(0x0238) = (MCHBAR32(0x238) & ~(7 << 14)) | (6 << 14);
+	MCHBAR32(0x0238) = (MCHBAR32(0x238) & ~(7 << 11)) | (6 << 11);
+	MCHBAR32(0x0238) = (MCHBAR32(0x238) & ~(7 <<  8)) | (6 <<  8);
+
+	MCHBAR32(0x023c) &= ~(3 << 24);
+	MCHBAR32(0x023c) &= ~(1 << 23);
+	MCHBAR32(0x023c) = (MCHBAR32(0x23c) & ~(7 << 20)) | (3 << 20);
+	MCHBAR32(0x023c) = (MCHBAR32(0x23c) & ~(7 << 17)) | (6 << 17);
+	MCHBAR32(0x023c) = (MCHBAR32(0x23c) & ~(7 << 14)) | (6 << 14);
+	MCHBAR32(0x023c) = (MCHBAR32(0x23c) & ~(7 << 11)) | (6 << 11);
+	MCHBAR32(0x023c) = (MCHBAR32(0x23c) & ~(7 <<  8)) | (6 <<  8);
+#if 0
+
+	if (quadcore) {
+		MCHBAR32(0xb14) |= (0xbfbf << 16);
+	}
+#endif
+}
+
+#if 0
 static void post_jedec_sequence(const int cores) {
 	const int quadcore = cores == 4;
 
@@ -1584,7 +1626,28 @@ static void post_jedec_sequence(const int cores) {
 		MCHBAR32(0xb14) |= (0xbfbf << 16);
 	}
 }
+#endif
 
+static void dram_optimizations(const timings_t *const timings,
+			       const dimminfo_t *const dimms)
+{
+	int ch;
+
+	FOR_EACH_POPULATED_CHANNEL(dimms, ch) {
+		const unsigned int mchbar = CxDRC1_MCHBAR(ch);
+		u32 cxdrc1 = MCHBAR32(mchbar);
+		cxdrc1 &= ~CxDRC1_SSDS_MASK;
+		if (dimms[ch].ranks == 1)
+			cxdrc1 |= CxDRC1_SS;
+		else
+			cxdrc1 |= CxDRC1_DS;
+		MCHBAR32(mchbar) = cxdrc1;
+	}
+//		cxdrc = (cxdrc & ~(0xf << 28)) | (0xb << 28);
+//		cxdrc = (cxdrc & ~(0x7 << 24)) | (0x1 << 24);
+}
+
+#if 0
 static void dram_optimizations(const timings_t *const timings,
 			       const dimminfo_t *const dimms)
 {
@@ -1620,6 +1683,7 @@ u32 raminit_get_rank_addr(unsigned int channel, unsigned int rank)
 	return ((reg & CxDRBy_BOUND_MASK(rank)) >> CxDRBy_BOUND_SHIFT(rank)) << 25;
 }
 
+#if 0
 void raminit_reset_readwrite_pointers(void) {
 	MCHBAR32(0x1234) |=  (1 <<  6);
 	MCHBAR32(0x1234) &= ~(1 <<  6);
@@ -1632,6 +1696,7 @@ void raminit_reset_readwrite_pointers(void) {
 	MCHBAR32(0x15f0) |=  (1 <<  9);
 	MCHBAR32(0x15f0) |=  (1 << 10);
 }
+#endif
 
 #if CONFIG_DEBUG_RAM_SETUP
 void sdram_dump_mchbar_registers(void);
@@ -1865,6 +1930,253 @@ MCH10(0x0880, 0xc8186145, 0xc30c2cb2, 0x34d34d30, 0x481c71c6, 0xb2ca28a2, 0x30c3
 	MCHBAR8(0x400) |= 1; // 0x400 is magic -- the last bit disappears
 }
 
+static void jedec_init(const timings_t *const timings,
+		       const dimminfo_t *const dimms)
+{
+#if 0
+/									#define DCC_MCHBAR              0x200
+/ 0000 0000 0000 0001 0000 0000 0000 0000 = 0x00010000
+/ 0000 0000 0000 0001 1000 0000 0000 0000 = 0x00018000
+/ 0000 0000 0000 0010 1000 0000 0000 0000 = 0x00028000
+/ 0000 0000 0010 0100 1000 0000 0000 0000 = 0x00248000
+/ 0000 0000 0100 0100 1000 0000 0000 0000 = 0x00448000
+/ 0000 0000 0000 0100 1000 0000 0000 0000 = 0x00048000
+/ 0000 0000 0000 0011 1000 0000 0000 0000 = 0x00038000
+/ 0000 0000 0000 0010 1000 0000 0000 0000 = 0x00028000
+/ 0000 0000 0000 0110 1000 0000 0000 0000 = 0x00068000
+/ 0000 0000 0000 0011 1000 0000 0000 0000 = 0x00038000
+/ 0000 0000 0000 0100 1000 0000 0000 0000 = 0x00048000
+/ 0000 0000 0000 0100 0000 0000 0000 0000 = 0x00040000
+/            XX 22:21 EMRS command (when SMS = 100b)			#define DCC_SET_EREG_SHIFT      21
+/									#define DCC_SET_EREG_MASK       (DCC_CMD_MASK | (3 << DCC_SET_EREG_SHIFT))
+/									#define DCC_SET_EREGx(x)        ((DCC_SET_EREG |                           \
+/														((x - 1) << DCC_SET_EREG_SHIFT)) & \
+/													 DCC_SET_EREG_MASK)
+/              X 20 (channels independent?)
+/                X 19 initialization complete
+/                 XXX 18:16 SMS mode select				#define DCC_CMD_SHIFT           16
+/									#define DCC_CMD_MASK            (7 << DCC_CMD_SHIFT)
+/									#define DCC_CMD_NOP             (1 << DCC_CMD_SHIFT)
+/													/* For mode register mr0: */
+/									#define DCC_SET_MREG            (3 << DCC_CMD_SHIFT)
+/													/* For extended mode registers mr1 to mr3: */
+/									#define DCC_SET_EREG            (4 << DCC_CMD_SHIFT)
+/                     X 15 reserved ???
+/                           X 10 XOR disable				#define DCC_NO_CHANXOR          (1 << 10)
+/                                      X 1 symmetric addressing	#define DCC_INTERLEAVED         (1 <<  1)
+/ 0000 0000 0000 0001 0000 0000 0000 0000 = 0x00010000
+/	DCC_CMD_NOP
+/ fff019ca:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
+/ fff019d0:       81 e1 ff ff f9 ff       and    $0xfff9ffff,%ecx
+/ fff019d6:       81 c9 00 00 01 00       or     $0x10000,%ecx
+/ fff019dc:       89 0d 00 42 d1 fe       mov    %ecx,0xfed14200
+/
+/ 0000 0000 0000 0001 1000 0000 0000 0000 = 0x00018000
+/ 	DCC_CMD_NOP + reserved?
+/ fff019e2:       81 0d 00 42 d1 fe 00    orl    $0x8000,0xfed14200
+/
+/ 0000 0000 0000 0010 1000 0000 0000 0000 = 0x00028000
+/ 	all banks precharge
+/ fff019ec:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
+/ fff019f2:       81 e1 ff ff fa ff       and    $0xfffaffff,%ecx
+/ fff019f8:       0b cf                   or     %edi,%ecx			???
+/ fff019fa:       89 0d 00 42 d1 fe       mov    %ecx,0xfed14200
+/ memory
+/ fff01a00:       8b 4d f4                mov    -0xc(%ebp),%ecx
+/ fff01a03:       8b 09                   mov    (%ecx),%ecx
+/ fff01a05:       89 4d f0                mov    %ecx,-0x10(%ebp)
+/
+/ 0000 0000 0010 0100 1000 0000 0000 0000 = 0x00248000
+/	DCC_SET_EREGx(3)
+/ fff01a08:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
+/ fff01a0e:       81 e1 ff ff bc ff       and    $0xffbcffff,%ecx
+/ fff01a14:       81 c9 00 00 24 00       or     $0x240000,%ecx
+/ fff01a1a:       89 0d 00 42 d1 fe       mov    %ecx,0xfed14200
+/ memory
+/ fff01a20:       8b 4d f4                mov    -0xc(%ebp),%ecx
+/ fff01a23:       8b 09                   mov    (%ecx),%ecx
+/ fff01a25:       89 4d f0                mov    %ecx,-0x10(%ebp)
+/
+/ 0000 0000 0100 0100 1000 0000 0000 0000 = 0x00448000
+/	DCC_SET_EREGx(5)
+/ fff01a28:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
+/ fff01a2e:       81 e1 ff ff dc ff       and    $0xffdcffff,%ecx
+/ fff01a34:       81 c9 00 00 44 00       or     $0x440000,%ecx
+/ fff01a3a:       89 0d 00 42 d1 fe       mov    %ecx,0xfed14200
+/ memory
+/ fff01a40:       8b 4d f4                mov    -0xc(%ebp),%ecx
+/ fff01a43:       8b 09                   mov    (%ecx),%ecx
+/ fff01a45:       89 4d f0                mov    %ecx,-0x10(%ebp)
+/
+/ 0000 0000 0000 0100 1000 0000 0000 0000 = 0x00048000
+/	DCC_SET_EREGx(1)
+/ fff01a48:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
+/ fff01a4e:       23 ce                   and    %esi,%ecx
+/ fff01a50:       0b ca                   or     %edx,%ecx
+/ fff01a52:       89 0d 00 42 d1 fe       mov    %ecx,0xfed14200
+/ memory
+/ fff01a58:       bb 00 02 00 00          mov    $0x200,%ebx
+/ fff01a5d:       09 5d f4                or     %ebx,-0xc(%ebp)
+/ fff01a60:       8b 4d f4                mov    -0xc(%ebp),%ecx
+/ fff01a63:       8b 09                   mov    (%ecx),%ecx
+/ fff01a65:       89 4d f0                mov    %ecx,-0x10(%ebp)
+/ .... complicated mess afterwards
+/
+/ 0000 0000 0000 0011 1000 0000 0000 0000 = 0x00038000
+/ 	DCC_SET_MREG
+/ fff01af1:       8b 1d 00 42 d1 fe       mov    0xfed14200,%ebx
+/ fff01af7:       81 e3 ff ff fb ff       and    $0xfffbffff,%ebx
+/ fff01afd:       b9 00 00 03 00          mov    $0x30000,%ecx
+/ fff01b02:       0b d9                   or     %ecx,%ebx
+/ fff01b04:       89 1d 00 42 d1 fe       mov    %ebx,0xfed14200
+/ memory
+/ fff01b0a:       8b 5d f8                mov    -0x8(%ebp),%ebx
+/ fff01b0d:       8b 1b                   mov    (%ebx),%ebx
+/ fff01b0f:       89 5d f0                mov    %ebx,-0x10(%ebp)
+/
+/ 0000 0000 0000 0010 1000 0000 0000 0000 = 0x00028000
+/ 	all banks precharge
+/ fff01b12:       8b 1d 00 42 d1 fe       mov    0xfed14200,%ebx
+/ fff01b18:       81 e3 ff ff fa ff       and    $0xfffaffff,%ebx
+/ fff01b1e:       0b df                   or     %edi,%ebx
+/ fff01b20:       89 1d 00 42 d1 fe       mov    %ebx,0xfed14200
+/ memory
+/ fff01b26:       8b 5d f4                mov    -0xc(%ebp),%ebx
+/ fff01b29:       8b 1b                   mov    (%ebx),%ebx
+/ fff01b2b:       89 5d f0                mov    %ebx,-0x10(%ebp)
+/
+/ 0000 0000 0000 0110 1000 0000 0000 0000 = 0x00068000
+/ 	CBR Refresh Enable
+/ fff01b2e:       8b 1d 00 42 d1 fe       mov    0xfed14200,%ebx
+/ fff01b34:       81 e3 ff ff fe ff       and    $0xfffeffff,%ebx
+/ fff01b3a:       81 cb 00 00 06 00       or     $0x60000,%ebx
+/ fff01b40:       89 1d 00 42 d1 fe       mov    %ebx,0xfed14200
+/ memory
+/ fff01b46:       8b 5d f4                mov    -0xc(%ebp),%ebx
+/ fff01b49:       8b 1b                   mov    (%ebx),%ebx
+/ fff01b4b:       89 5d f0                mov    %ebx,-0x10(%ebp)
+/ fff01b4e:       8b 5d f4                mov    -0xc(%ebp),%ebx
+/ fff01b51:       8b 1b                   mov    (%ebx),%ebx
+/ fff01b53:       89 5d f0                mov    %ebx,-0x10(%ebp)
+/
+/ 0000 0000 0000 0011 1000 0000 0000 0000 = 0x00038000
+/ 	DCC_SET_MREG
+/ fff01b56:       8b 1d 00 42 d1 fe       mov    0xfed14200,%ebx
+/ fff01b5c:       81 e3 ff ff fb ff       and    $0xfffbffff,%ebx
+/ fff01b62:       0b d9                   or     %ecx,%ebx
+/ fff01b64:       89 1d 00 42 d1 fe       mov    %ebx,0xfed14200
+/ memory
+/ fff01b6a:       81 65 f8 ff f7 ff ff    andl   $0xfffff7ff,-0x8(%ebp)
+/ fff01b71:       8b 4d f8                mov    -0x8(%ebp),%ecx
+/ fff01b74:       8b 09                   mov    (%ecx),%ecx
+/ fff01b76:       89 4d f0                mov    %ecx,-0x10(%ebp)
+/
+/ 0000 0000 0000 0100 1000 0000 0000 0000 = 0x00048000
+/	DCC_SET_EREGx(1)
+/ fff01b79:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
+/ fff01b7f:       23 ce                   and    %esi,%ecx
+/ fff01b81:       0b ca                   or     %edx,%ecx
+/ fff01b83:       89 0d 00 42 d1 fe       mov    %ecx,0xfed14200
+/ memory
+/ fff01b89:       8b 4d ec                mov    -0x14(%ebp),%ecx
+/ fff01b8c:       80 cd 1c                or     $0x1c,%ch
+/ fff01b8f:       8b 09                   mov    (%ecx),%ecx
+/ fff01b91:       89 4d f0                mov    %ecx,-0x10(%ebp)
+/ fff01b94:       8b 4d ec                mov    -0x14(%ebp),%ecx
+/ fff01b97:       8b 09                   mov    (%ecx),%ecx
+/ fff01b99:       89 4d f0                mov    %ecx,-0x10(%ebp)
+/
+/ 0000 0000 0000 0100 0000 0000 0000 0000 = 0x00040000
+/	DCC_SET_EREGx(1) + reserved
+/ fff01b9c:       81 25 00 42 d1 fe ff    andl   $0xffff7fff,0xfed14200
+/ fff01ba3:       7f ff ff 
+#endif
+
+#if 0
+	if ((timings->tWR < 5) || (timings->tWR > 12))
+		die("tWR value unsupported in Jedec initialization.\n");
+
+	/* Pre-jedec settings */
+	MCHBAR32(0x40) |= (1 << 1);
+	MCHBAR32(0x230) |= (3 << 1);
+	MCHBAR32(0x238) |= (3 << 24);
+	MCHBAR32(0x23c) |= (3 << 24);
+
+	/* Normal write pointer operation */
+	MCHBAR32(0x14f0) |= (1 << 9);
+	MCHBAR32(0x15f0) |= (1 << 9);
+#endif
+
+	MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | DCC_CMD_NOP;
+
+#if 0
+	u8 reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
+	pci_write_config8(PCI_DEV(0, 0, 0), 0xf0, reg8 & ~(1 << 2));
+	reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
+	pci_write_config8(PCI_DEV(0, 0, 0), 0xf0, reg8 |  (1 << 2));
+	udelay(2);
+#endif
+
+	static const u8 wr_lut[] = { 1, 2, 3, 4, 5, 5, 6, 6 };
+
+//	const int WL = ((timings->tWL - 5) & 7) << 6;
+	const int ODT_120OHMS = (1 << 9);
+	const int ODS_34OHMS = (1 << 4);
+	const int WR = (wr_lut[timings->tWR - 5] & 7) << 12;
+	const int DLL1 = 1 << 11;
+	const int CAS = ((timings->CAS - 4) & 7) << 7;
+	const int INTERLEAVED = 1 << 6;/* This is READ Burst Type == interleaved. */
+
+	int ch, r;
+	FOR_EACH_POPULATED_RANK(dimms, ch, r) {
+		/* We won't do this in dual-interleaved mode,
+		   so don't care about the offset. */
+		const u32 rankaddr = raminit_get_rank_addr(ch, r);
+		printk(BIOS_DEBUG, "Performing Jedec initialization at address 0x%08x.\n", rankaddr);
+	
+		MCHBAR32(DCC_MCHBAR) |= 1 << 15;
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | (2 << DCC_CMD_SHIFT);
+#ifndef YOLO
+#define read32(n) do { if(0){ (void)(n); } } while (0)
+#endif
+		read32(rankaddr);
+
+		//MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(2);
+		//read32(rankaddr | WL);
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(3);
+		read32(rankaddr);
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(5);
+		read32(rankaddr);
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(1);
+		read32(rankaddr | ODT_120OHMS | ODS_34OHMS);
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | DCC_SET_MREG;
+		read32(rankaddr | WR | DLL1 | CAS | INTERLEAVED); // ??? or
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | (2 << DCC_CMD_SHIFT);
+		read32(rankaddr);
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | (6 << DCC_CMD_SHIFT);
+		read32(rankaddr);
+		read32(rankaddr);
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | DCC_SET_MREG;
+		read32(rankaddr | WR        | CAS | INTERLEAVED); // ??? or
+
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(1);
+		read32(rankaddr | ODT_120OHMS | ODS_34OHMS); // ???
+
+#ifndef YOLO
+#undef read32
+#endif
+		MCHBAR32(DCC_MCHBAR) &= ~(1 << 15);
+	}
+}
+
 void raminit(sysinfo_t *const sysinfo, const int s3resume)
 {
 	const dimminfo_t *const dimms = sysinfo->dimms;
@@ -2016,23 +2328,29 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	FOR_EACH_POPULATED_CHANNEL(dimms, ch)
 		MCHBAR32(CxDCLKDIS_MCHBAR(ch)) |= CxDCLKDIS_ENABLE;
 
+// no idea what this is
 //3ab0.3ab1    .H..    [0000:fff01d38]   POST: *** ff32 ***
 //3ab6.3ab7    .H..    [0000:fff01edd]   MCHBAR: [00000400] => 20
+#ifdef YOLO
 	while (MCHBAR32(0x400) & 1) {}
+#endif
 //3ab6.3abb    .H..    [0000:fff01ee5]   MCHBAR: [00000400] => 000e0020
 //3ab6.3abc    .H..    [0000:fff01ee5]   MCHBAR: [00000400] <= 000c0000
 	MCHBAR32(0x400) &= 0x20020;
 //3abd.3abe    .H..    [0000:fff01d38]   POST: *** ff33 ***
 	
 
-
 #if 0
 	/* Initialize memory map with dummy values of 128MB per rank with a
 	   page size of 4KB. This makes the JEDEC initialization code easier. */
 	prejedec_memory_map(dimms, timings->channel_mode);
+#endif
+
 	if (!s3resume)
 		/* Perform JEDEC initialization of DIMMS. */
 		jedec_init(timings, dimms);
+
+#if 0
 	/* Some programming steps after JEDEC initialization. */
 	post_jedec_sequence(sysinfo->cores);
 
@@ -2065,13 +2383,19 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	}
 
 	igd_compute_ggc(sysinfo);
+#endif
 
 	/* Program final memory map (with real values). */
 	program_memory_map(dimms, timings->channel_mode, 0, sysinfo->ggc);
 
+	// FFF
+	post_jedec_sequence(sysinfo->cores);
+
 	/* Some last optimizations. */
 	dram_optimizations(timings, dimms);
 
+	MCHBAR32(DCC_MCHBAR) |= (0x7 << 16) | (0x1 << 19) | (1 << 15);
+#if 0
 	/* Mark raminit beeing finished. :-) */
 	u8 tmp8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), 0xa2) & ~(1 << 7);
 	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, tmp8);

@@ -510,14 +510,13 @@ F XXX12 program_memory_map()
 
 3b8c.3b8d    .H..    [0000:fff01bd4]   MCHBAR: [00000200] => 00040402
 3b8c.3b8e    .H..    [0000:fff01bd4]   MCHBAR: [00000200] <= 00040002
-3b8c.3b8f    .H..    [0000:fff01bd4]   MCHBAR: [00001250] <= 000006c4
-3b8c.3b90    .H..    [0000:fff01bd4]   MCHBAR: [00001254] <= 871a066d
 
 F post_jedec_sequence()???
 
-3b8c.3b91    .H..    [0000:fff01bd4]   MCHBAR: [00001350] <= 000006c4
-3b8c.3b92    .H..    [0000:fff01bd4]   MCHBAR: [00001354] <= 871a066d
-
+3b8c.3b8f    .H..    [0000:fff01bd4]   MCHBAR: [00001250] <= 000006c4	C0AIT_LO
+3b8c.3b90    .H..    [0000:fff01bd4]   MCHBAR: [00001254] <= 871a066d	C0AIT_HI
+3b8c.3b91    .H..    [0000:fff01bd4]   MCHBAR: [00001350] <= 000006c4	C1AIT_LO
+3b8c.3b92    .H..    [0000:fff01bd4]   MCHBAR: [00001354] <= 871a066d	C1AIT_HI
 3b8c.3b93    .H..    [0000:fff01bd4]   MCHBAR: [00000040] => 00000002
 3b8c.3b94    .H..    [0000:fff01bd4]   MCHBAR: [00000040] <= 00000000
 3b8c.3b95    .H..    [0000:fff01bd4]   MCHBAR: [00000230] => 340a0006
@@ -529,7 +528,6 @@ F post_jedec_sequence()???
 3b8c.3b9b    .H..    [0000:fff01bd4]   MCHBAR: [0000023c] => 03000000
 3b8c.3b9c    .H..    [0000:fff01bd4]   MCHBAR: [0000023c] <= 003db600
 
-F raminit_reset_readwrite_pointers()???
 F dram_optimizations()
 3b9e.3b9f    .H..    [0000:fff01d38]   POST: *** ff37 ***
 3ba3.3ba4    .H..    [0000:fff01cd1]   MCHBAR: [00001234] => 000e1800
@@ -542,6 +540,7 @@ F dram_optimizations()
 3ba3.3bab    .H..    [0000:fff01cd1]   MCHBAR: [00001334] <= b10e1800
 3bad.3bae    .H..    [0000:fff01d38]   POST: *** ff38 ***
 
+F raminit_reset_readwrite_pointers()???
 3bb2.3bb3    .H..    [0000:fff01f5f]   MCHBAR: [00000200] => 00040002
 3bb2.3bb4    .H..    [0000:fff01f5f]   MCHBAR: [00000200] <= 000f8002
 3bb5.3bb6    .H..    [0000:fff01d38]   POST: *** ff39 ***

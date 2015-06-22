@@ -8,6 +8,8 @@ while (<F>) {
 	$base = (hex $1) - $off;
 
 	$regs{$base} ||= [0, 0];
+
+	$regs{$base}->[0] &= ~(0xffffffff << (8 * $off));
 	$regs{$base}->[0] |= (hex $2) << (8 * $off);
 }
 
@@ -24,4 +26,4 @@ while (<F>) {
 
 $regs{$_}->[0] = $regs{$_}->[0] ? sprintf "0x%08x", $regs{$_}->[0] : " " x 10 foreach keys %regs;
 $regs{$_}->[1] = $regs{$_}->[1] ? sprintf "0x%08x", $regs{$_}->[1] : " " x 10 foreach keys %regs;
-printf "0x%04x: %s %s%s\n", $_, @{$regs{$_}}, (($regs{$_}->[1] =~ /\s/ or $regs{$_}->[0] eq $regs{$_}->[1]) ? '' : ' -') foreach sort keys %regs;
+printf "0x%04x: %s %s%s\n", $_, @{$regs{$_}}, (($regs{$_}->[1] =~ /\s/ or $regs{$_}->[0] eq $regs{$_}->[1]) ? '' : ' -') foreach sort { int($a) <=> int($b) } keys %regs;
