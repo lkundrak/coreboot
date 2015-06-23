@@ -1547,6 +1547,7 @@ printk(BIOS_SPEW, "========================================\n");
 // FFF
 	sysinfo->dimms[dimmno / 2].banks = spd_read_byte(device, SPD_NUM_BANKS_PER_SDRAM);
 	sysinfo->dimms[dimmno / 2].page_size =
+		sysinfo->dimms[dimmno / 2].banks *
 		(1 << spd_read_byte(device, SPD_NUM_COLUMNS)) *
 		(1 << (sysinfo->dimms[dimmno / 2].chip_width + 2)) / 8;
 

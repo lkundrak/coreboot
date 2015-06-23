@@ -558,7 +558,7 @@ static void dram_program_timings(const timings_t *const timings)
 {
 	/* Values are for DDR2. */
 	const int burst_length = 8;
-	const int tWTR = 0;
+	const int tWTR = 2;
 	int i;
 
 	const int tWL = timings->CAS - 1; //XXX
@@ -567,20 +567,19 @@ static void dram_program_timings(const timings_t *const timings)
 
 	FOR_EACH_CHANNEL(i) {
 
-		// [lkundrak@odvarok coreboot-x61]$ perl -e '$x=0x34b10461; do { print $x >> 31 } while ($x = ($x << 1) & 0xffffffff); END {print "\n"}'
-		// 00111100101100010000100001000001 == 0x3cb10841
-		//  xxxxx 30:26 0xd write to precharge spacing tWR
-		//         xxxx 23:20 0xb write to read
-		//               xxx 17:15 010b write to different rank read
-		//                   xxxx 13:10 read to wrtie
-		//                         xxx 7:5 read to different rank write
-		//                              xxx 2:0 read to different rank read
+		// $ perl -e '$x= 0x2c910841 ; do { print $x >> 31 } while ($x = ($x << 1) & 0xffffffff); END {print "\n"}'
+		// 0010 1100  1001 0001  0000 1000  0100 0001 == 0x2c910841
+		// 0010 1100  0111 0001  0000 1000  0100 0001 == 0x2c710841
+		//  xxx xx 30:26 0xd write to precharge spacing tWR
+		//            xxxx 23:20 0xb write to read
+		//                   xx  x 17:15 010b write to different rank read
+		//                         xx xx 13:10 read to wrtie
+		//                                  xxx 7:5 read to different rank write
+		//                                        xxx 2:0 read to different rank read
 
 		u32 reg = MCHBAR32(CxDRT0_MCHBAR(i));
-		const int xxxtWL = tWL + 4;
-		int btb_wtp = xxxtWL + burst_length/2 + timings->tWR;
-		int btb_wtr = xxxtWL + burst_length/2 + tWTR;
-
+		const int btb_wtp = tWL + burst_length/2 + timings->tWR;
+		const int btb_wtr = tWL + burst_length/2 + tWTR;
 		reg = (reg & ~(CxDRT0_BtB_WtP_MASK  | CxDRT0_BtB_WtR_MASK)) |
 			((btb_wtp << CxDRT0_BtB_WtP_SHIFT) & CxDRT0_BtB_WtP_MASK) |
 			((btb_wtr << CxDRT0_BtB_WtR_SHIFT) & CxDRT0_BtB_WtR_MASK);
@@ -626,6 +625,7 @@ static void dram_program_timings(const timings_t *const timings)
 		reg = (reg & ~(0xf <<  6)) | (0x1 <<  6);
 		reg = (reg & ~(0x1f << 0)) | (0x10 << 0);
 		MCHBAR32(CxDRT2_MCHBAR(i)) = reg;
+
 
 		// 0000 0000  1000 0011  1000 0111  1000 0001 = 0x00838781 CHAN 0
 		// 0000 0000  1000 0011  1000 0001  0000 0001 = 0x00838101 CHAN 1
@@ -771,7 +771,7 @@ static void dram_program_timings(const timings_t *const timings)
 
 static void dram_program_banks(const dimminfo_t *const dimms)
 {
-	int ch, r;
+	int ch; //, r;
 
 	FOR_EACH_CHANNEL(ch) {
 		const int tRPALL = dimms[ch].banks == 8;
@@ -781,11 +781,13 @@ static void dram_program_banks(const dimminfo_t *const dimms)
 			reg |= tRPALL << 15;
 		MCHBAR32(CxDRT1_MCHBAR(ch)) = reg;
 
+#if 0 ///FFF
 		reg = MCHBAR32(CxDRA_MCHBAR(ch)) & ~CxDRA_BANKS_MASK;
 		FOR_EACH_POPULATED_RANK_IN_CHANNEL(dimms, ch, r) {
 			reg |= CxDRA_BANKS(r, dimms[ch].banks);
 		}
 		MCHBAR32(CxDRA_MCHBAR(ch)) = reg;
+#endif
 	}
 }
 
@@ -1010,6 +1012,8 @@ static void program_memory_map(const dimminfo_t *const dimms, const channel_mode
 		}
 		MCHBAR32(CxDRA_MCHBAR(ch)) = reg;
 	}
+#if 0 ///FFF
+#endif
 
 	/* Calculate memory mapping, all values in MB. */
 
@@ -1246,6 +1250,8 @@ static void ddr3_read_io_init(const mem_clock_t ddr3clock,
 }
 #endif
 
+
+// TODO set 0x0400, 0x040c, 0x41c
 static void memory_io_init(const mem_clock_t ddr3clock,
 			   const dimminfo_t *const dimms,
 			   const stepping_t stepping,
@@ -1309,8 +1315,8 @@ static void memory_io_init(const mem_clock_t ddr3clock,
 	tmp &= ~(3 << 20);
 	MCHBAR32(0x1438) = tmp;
 
+// XXX1
 #if 0
-
 	tmp = MCHBAR32(0x400);
 	tmp &= ~((3 << 4) | (3 << 16) | (3 << 30));
 	tmp |= (2 << 4) | (2 << 16);
@@ -1729,14 +1735,18 @@ clkcfg1 (void)
 static void
 wtf1 (void)
 {
+	u32 tmp;
 //38e5.38e6    .H..    [0000:fff00ff0]   MCHBAR: [00001444] => 00000115
 //38e5.38e7    .H..    [0000:fff00ff0]   MCHBAR: [00001444] <= 00001115
 	MCHBAR32(0x1444) |= 0x1000;
 
 //38e5.38e8    .H..    [0000:fff00ff0]   MCHBAR: [00000400] => 00080000
 //38e5.38e9    .H..    [0000:fff00ff0]   MCHBAR: [00000400] <= 000a0020
-	MCHBAR32(0x400) |= 0x20020;
-
+	//MCHBAR32(0x400) |= 0x20020;
+	tmp = MCHBAR32(0x400);
+	tmp &= ~((3 << 4) | (3 << 16) | (3 << 30));
+	tmp |= (2 << 4) | (2 << 16);
+	MCHBAR32(0x400) = tmp;
 //38fe.38ff    .H..    [0000:fff01020]   MCHBAR: [00000400] => 000a0020
 //38fe.3900    .H..    [0000:fff01020]   MCHBAR: [00000400] <= 000e0020
 	MCHBAR32(0x400) |= 0x40000;
@@ -1755,7 +1765,7 @@ wtf1 (void)
 
 //38fe.3907    .H..    [0000:fff01020]   MCHBAR: [0000041c] => 22222222
 //38fe.3908    .H..    [0000:fff01020]   MCHBAR: [0000041c] <= 11119999
-	MCHBAR32(0x41c) = 11119999;
+	MCHBAR32(0x41c) = 0x11119999;
 
 //38fe.3909    .H..    [0000:fff01020]   MCHBAR: [000004d0] => 2d
 //38fe.390a    .H..    [0000:fff01020]   MCHBAR: [000004d0] <= 36
@@ -2333,10 +2343,12 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 //3ab6.3ab7    .H..    [0000:fff01edd]   MCHBAR: [00000400] => 20
 #ifdef YOLO
 	while (MCHBAR32(0x400) & 1) {}
+#else
+	MCHBAR32(0x400) &= ~1;
 #endif
 //3ab6.3abb    .H..    [0000:fff01ee5]   MCHBAR: [00000400] => 000e0020
 //3ab6.3abc    .H..    [0000:fff01ee5]   MCHBAR: [00000400] <= 000c0000
-	MCHBAR32(0x400) &= 0x20020;
+	MCHBAR32(0x400) &= ~0x20020;
 //3abd.3abe    .H..    [0000:fff01d38]   POST: *** ff33 ***
 	
 
