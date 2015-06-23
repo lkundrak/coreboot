@@ -10,7 +10,7 @@ cc -O0 -m32 -D__PRE_RAM__ -fno-builtin -include src/include/kconfig.h -Ibuild -I
 #valgrind --db-attach=no test/emu test/dimms/[67]
 if test/emu test/dimms/[67] >test/OUT
 then
-	perl test/mchinit.pl test/MCHINIT test/OUT
+	perl test/mchinit.pl test/initial-mchbar.c test/MCHINIT test/OUT
 else
 	cat test/OUT
 	false

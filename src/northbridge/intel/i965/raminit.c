@@ -798,18 +798,18 @@ static void odt_setup(const timings_t *const timings, const int sff)
 
 	FOR_EACH_CHANNEL(ch) {
 // XXX defaults work well for 533. what else?
-		u32 reg = MCHBAR32(CxODT_HIGH(ch));
+		u32 reg = MCHBAR32(CxODT_LOW(ch));
 		MCHBAR32(CxODT_LOW(ch)) = reg;
 
 // 0110 0000  1001 0010  1000 0111  1000 1000 = 0x60928788
-// 0000 0000  1000 0010  1000 0111  1000 0111 = 0x00828787
+// 0000 0000  0000 0010  1000 0111  1000 0111 = 0x00028787
 //  xx 30:29     x 20                     xxx 2:0
-		reg = MCHBAR32(CxODT_LOW(ch));
+// XXX: calculate?
+		reg = MCHBAR32(CxODT_HIGH(ch));
 		reg |= 3 << 29;
-		reg |= 1 << 20;
+		reg |= 9 << 20;
 		reg = (reg & ~(0xf << 0)) | (8 << 0);
 		MCHBAR32(CxODT_HIGH(ch)) = reg;
-
 	}
 }
 
