@@ -213,12 +213,18 @@ static void receive_enable_calibration(const timings_t *const timings,
 	/*     F */{ { 0, 0 }, { 3, 3 }, { 6, 6 }, { 5, 5 } },
 	};
 
+#if 0
 	const int cardF[] =
 		{ dimms[0].card_type == 0xf, dimms[0].card_type == 0xf };
 	const unsigned t_bound =
 		(timings->mem_clock == MEM_CLOCK_1067MT) ? 9 : 12;
 	const unsigned p_bound =
 		(timings->mem_clock == MEM_CLOCK_1067MT) ? 8 : 1;
+#else
+	const int cardF[] = { 0, 0 };
+	const unsigned t_bound = 0;
+	const unsigned p_bound = 0;
+#endif
 
 	rec_timing_t rec_timings[2][4] = {
 		{
@@ -282,8 +288,13 @@ void raminit_receive_enable_calibration(const timings_t *const timings,
 
 	/* Setup group to byte-lane mapping. */
 	FOR_EACH_POPULATED_CHANNEL(dimms, ch) {
+#if 0
 		const char (*const map)[2] =
 			bytelane_map[dimms[ch].card_type == 0xf];
+#else
+		const char (*const map)[2] =
+			bytelane_map[0];
+#endif
 		unsigned int group;
 		for (group = 0; group < 4; ++group) {
 			const unsigned int mchbar = CxRECy_MCHBAR(ch, group);

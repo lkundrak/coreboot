@@ -424,62 +424,107 @@ F main()  Enable DRAM clock pairs for populated DIMMs.
 
 
 F jedec_init()???
+
+FIRST HALF ==================================================
+
 3acb.3acc    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00000000	DCC - DRAM Channel Control
-3acb.3acd    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00010000
+3acb.3acd    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00010000		DCC_CMD_NOP
 3acb.3ace    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00010000
-3acb.3acf    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00018000
+3acb.3acf    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00018000		DCC_CMD_NOP [+= reserved?]
 3acb.3ad0    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00018000
-3acb.3ad1    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00028000
+3acb.3ad1    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00028000		all banks precharge
+
+	3ad2.3ad3    R.Q.    [0000:fff019c4]   MEM:  readl 00000000 => 00000000
+
 3ad4.3ad5    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00028000
-3ad4.3ad6    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00248000
+3ad4.3ad6    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00248000		DCC_SET_EREGx(3)	EMRS(2)
 3ad4.3ad7    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00248000
-3ad4.3ad8    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00448000
+3ad4.3ad8    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00448000		DCC_SET_EREGx(5)	EMRS(3)
 3ad4.3ad9    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00448000
-3ad4.3ada    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00048000
+3ad4.3ada    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00048000		DCC_SET_EREGx(1)	EMRS(1)
 3ad4.3aed    .H..    [0000:fff01ac1]   MCHBAR: [00000200] => 00048000
-3ad4.3aee    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00038000
+3ad4.3aee    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00038000		DCC_SET_MREG
 3af1.3af2    .H..    [0000:fff01ac1]   MCHBAR: [00000200] => 00038000
-3af1.3af3    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00028000
+
+	3aef.3af0    R.Q.    [0000:fff01ac1]   MEM:  readl 00003a58 => 00000000
+
+3af1.3af3    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00028000		all banks precharge
 3af1.3af4    .H..    [0000:fff01ac1]   MCHBAR: [00000200] => 00028000
-3af1.3af5    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00068000
+3af1.3af5    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00068000		CBR Refresh Enable
 3af1.3af6    .H..    [0000:fff01ac1]   MCHBAR: [00000200] => 00068000
-3af1.3af7    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00038000
+3af1.3af7    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00038000		DCC_SET_MREG
 3af1.3af8    .H..    [0000:fff01ac1]   MCHBAR: [00000200] => 00038000
-3af1.3af9    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00048000
+3af1.3af9    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00048000		DCC_SET_EREGx(1)	EMRS(1)
+
+	3afa.3afb    R.Q.    [0000:fff01ac1]   MEM:  readl 00001e00 => 00000000
+
 3afc.3afd    .H..    [0000:fff01ac1]   MCHBAR: [00000200] => 00048000
-3afc.3afe    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00040000
-3afc.3b00    .H..    [0000:fff01ac1]   MCHBAR: [00001200] => 00040004
-3afc.3b03    .H..    [0000:fff01ba6]   MCHBAR: [00001202] => 00040004
-3afc.3b04    .H..    [0000:fff01ba6]   MCHBAR: [00001204] => 00040004
-3afc.3b05    .H..    [0000:fff01ba6]   MCHBAR: [00001206] => 00020004
+3afc.3afe    .H..    [0000:fff01ac1]   MCHBAR: [00000200] <= 00040000		DCC_SET_EREGx(1) [-= reserved?]
+  3afc.3b00    .H..    [0000:fff01ac1]   MCHBAR: [00001200] => 00040004 CH1	C0DRB01	(boundary)
+  3afc.3b03    .H..    [0000:fff01ba6]   MCHBAR: [00001202] => 00040004		C0DRB01
+  3afc.3b04    .H..    [0000:fff01ba6]   MCHBAR: [00001204] => 00040004		reserved (C0DRB23?)
+  3afc.3b05    .H..    [0000:fff01ba6]   MCHBAR: [00001206] => 00020004		reserved
+
+SECOND HALF ==================================================
+
 3afc.3b06    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00040000
-3afc.3b07    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00010000
+3afc.3b07    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00010000		DCC_CMD_NOP
 3afc.3b08    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00010000
-3afc.3b09    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00018000
+3afc.3b09    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00018000		DCC_CMD_NOP [+= reserved?]
 3afc.3b0a    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00018000
-3afc.3b0b    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00028000
+3afc.3b0b    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00028000		all banks precharge
+
+	3b0c.3b0d    RH..    [0000:fff019c4]   MEM:  readl 08000000 => fd88f558
+
 3b0e.3b0f    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00028000
-3b0e.3b10    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00248000
+3b0e.3b10    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00248000		DCC_SET_EREGx(3)	EMRS(2)
+
+	3b11.3b12    RH..    [0000:fff019c4]   MEM:  readl 08000000 => fdc0e558
+
 3b13.3b14    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00248000
-3b13.3b15    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00448000
+3b13.3b15    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00448000		DCC_SET_EREGx(5)	EMRS(3)
+
+	3b16.3b17    RH..    [0000:fff019c4]   MEM:  readl 08000000 => bd8af758
+
 3b18.3b19    .H..    [0000:fff019c4]   MCHBAR: [00000200] => 00448000
-3b18.3b1a    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00048000
+3b18.3b1a    .H..    [0000:fff019c4]   MCHBAR: [00000200] <= 00048000		DCC_SET_EREGx(1)	EMRS(1)
+
+	3b1b.3b1c    RH..    [0000:fff019c4]   MEM:  readl 08000200 => fdb8f549
+
 3b2d.3b2e    .H..    [0000:fff01ae2]   MCHBAR: [00000200] => 00048000
-3b2d.3b2f    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00038000
+3b2d.3b2f    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00038000		DCC_SET_MREG
+
+	3b30.3b31    RH..    [0000:fff01ae2]   MEM:  readl 08003a58 => fd88f558
+
 3b32.3b33    .H..    [0000:fff01ae2]   MCHBAR: [00000200] => 00038000
-3b32.3b34    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00028000
+3b32.3b34    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00028000		all banks precharge
+
+	3b35.3b36    RH..    [0000:fff01ae2]   MEM:  readl 08000000 => fdc0e558
+
 3b37.3b38    .H..    [0000:fff01ae2]   MCHBAR: [00000200] => 00028000
-3b37.3b39    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00068000
+3b37.3b39    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00068000		CBR Refresh Enable
+
+	3b3a.3b3b    RH..    [0000:fff01ae2]   MEM:  readl 08000000 => bd8af758
+	3b3a.3b3c    RH..    [0000:fff01ae2]   MEM:  readl 08000000 => fdb8f549
+
 3b3d.3b3e    .H..    [0000:fff01ae2]   MCHBAR: [00000200] => 00068000
-3b3d.3b3f    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00038000
+3b3d.3b3f    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00038000		DCC_SET_MREG
+
+	3b40.3b41    RH..    [0000:fff01ae2]   MEM:  readl 08003258 => fd88f558
+
 3b42.3b43    .H..    [0000:fff01ae2]   MCHBAR: [00000200] => 00038000
-3b42.3b44    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00048000
+3b42.3b44    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00048000		DCC_SET_EREGx(1)
+
+	3b45.3b46    RH..    [0000:fff01ae2]   MEM:  readl 08001e00 => fdc0e558
+	3b45.3b47    RH..    [0000:fff01ae2]   MEM:  readl 08000200 => bd8af758
+
 3b48.3b49    .H..    [0000:fff01ae2]   MCHBAR: [00000200] => 00048000
 3b48.3b4a    .H..    [0000:fff01ae2]   MCHBAR: [00000200] <= 00040000
-3b48.3b4b    .H..    [0000:fff01ae2]   MCHBAR: [00001300] => 00080008
-3b48.3b4c    .H..    [0000:fff01ba6]   MCHBAR: [00001302] => 00080008
-3b48.3b4d    .H..    [0000:fff01975]   MCHBAR: [00001304] => 00080008
-3b48.3b4e    .H..    [0000:fff01ba6]   MCHBAR: [00001306] => 00020008
+3b48.3b4b    .H..    [0000:fff01ae2]   MCHBAR: [00001300] => 00080008	CH1 C1DRB01
+3b48.3b4c    .H..    [0000:fff01ba6]   MCHBAR: [00001302] => 00080008	C1DRB01
+3b48.3b4d    .H..    [0000:fff01975]   MCHBAR: [00001304] => 00080008	(reserved? C1DRB23)
+3b48.3b4e    .H..    [0000:fff01ba6]   MCHBAR: [00001306] => 00020008	(reserved? C1DRB23)
+
 3b50.3b51    .H..    [0000:fff01d38]   POST: *** ff34 ***
 3b55.3b56    .H..    [0000:fff00a69]   MCHBAR: [00001434] => 41c0
 3b55.3b57    .H..    [0000:fff00a69]   MCHBAR: [00001434] <= 41c0
@@ -550,16 +595,22 @@ F raminit_receive_enable_calibration()
 3bc3.3bc5    .H..    [0000:fff00ec9]   MCHBAR: [000012a4] <= 80000020
 3bc3.3bc6    .H..    [0000:fff00ec9]   MCHBAR: [000013a4] => 00000020
 3bc3.3bc7    .H..    [0000:fff00ec9]   MCHBAR: [000013a4] <= 80000020
+
 3bc3.3bc8    .H..    [0000:fff00ec9]   MCHBAR: [00001414] => 011a0000
 3bc3.3bc9    .H..    [0000:fff00ec9]   MCHBAR: [00001414] <= 039a0000
+
 3bc3.3bca    .H..    [0000:fff00ec9]   MCHBAR: [000014f0] => 0300
 3bc3.3bcb    .H..    [0000:fff00ec9]   MCHBAR: [000014f0] <= 0300
 3bc3.3bcc    .H..    [0000:fff00ec9]   MCHBAR: [000015f0] => 0300
 3bc3.3bcd    .H..    [0000:fff00ec9]   MCHBAR: [000015f0] <= 0300
+
 3bc3.3bce    .H..    [0000:fff00ec9]   MCHBAR: [00000200] => 8002	DCC - DRAM Channel Control
 3bc3.3bcf    .H..    [0000:fff00ec9]   MCHBAR: [00000200] <= 0002
 3bc3.3bd3    .H..    [0000:fff00dee]   MCHBAR: [00001484] => 00
 3bc3.3bd4    .H..    [0000:fff00dee]   MCHBAR: [00001484] <= 08
+
+
+
 3bc3.3bd8    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 8101
 3bc3.3bd9    .H..    [0000:fff00c11]   MCHBAR: [0000121c] <= 8281
 3bc3.3bda    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 00838281
@@ -596,6 +647,9 @@ F raminit_receive_enable_calibration()
 3c04.3c0d    .H..    [0000:fff00b70]   MCHBAR: [000015f0] <= 0300
 3c0e.3c0f    RH.U    [0000:fff00b70]   IO:  inb 0061 => 3c
 3c10.3c11    .H..    [0000:fff00b70]   MCHBAR: [000014ac] => c0002121
+
+
+
 3c10.3c13    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 8281
 3c10.3c14    .H..    [0000:fff00c11]   MCHBAR: [0000121c] <= 8281
 3c10.3c15    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 00838281
@@ -632,6 +686,9 @@ F raminit_receive_enable_calibration()
 3c32.3c3b    .H..    [0000:fff00b70]   MCHBAR: [000015f0] <= 0300
 3c3c.3c3d    RH.U    [0000:fff00b70]   IO:  inb 0061 => 3c
 3c3e.3c3f    .H..    [0000:fff00b70]   MCHBAR: [000014ac] => c0002121
+
+
+
 3c3e.3c41    .H..    [0000:fff00d7c]   MCHBAR: [0000121c] => 8281
 3c3e.3c42    .H..    [0000:fff00d7c]   MCHBAR: [0000121c] <= 8281
 3c3e.3c43    .H..    [0000:fff00d7c]   MCHBAR: [0000121c] => 00838281
@@ -668,6 +725,7 @@ F raminit_receive_enable_calibration()
 3c5f.3c68    .H..    [0000:fff00b70]   MCHBAR: [000015f0] <= 0300
 3c69.3c6a    RH.U    [0000:fff00b70]   IO:  inb 0061 => 2c
 3c6b.3c6c    .H..    [0000:fff00b70]   MCHBAR: [000014ac] => c0002121
+
 3c6b.3c6e    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 8281
 3c6b.3c6f    .H..    [0000:fff00c11]   MCHBAR: [0000121c] <= 8281
 3c6b.3c70    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 00838281
@@ -704,6 +762,8 @@ F raminit_receive_enable_calibration()
 3c8c.3c95    .H..    [0000:fff00b70]   MCHBAR: [000015f0] <= 0300
 3c96.3c97    RH.U    [0000:fff00b70]   IO:  inb 0061 => 2c
 3c98.3c99    .H..    [0000:fff00b70]   MCHBAR: [000014ac] => c0002121
+
+
 3c98.3c9b    .H..    [0000:fff00d7c]   MCHBAR: [0000121c] => 8281
 3c98.3c9c    .H..    [0000:fff00d7c]   MCHBAR: [0000121c] <= 8301
 3c98.3c9d    .H..    [0000:fff00d7c]   MCHBAR: [0000121c] => 00838301
@@ -740,6 +800,9 @@ F raminit_receive_enable_calibration()
 3cb9.3cc2    .H..    [0000:fff00b70]   MCHBAR: [000015f0] <= 0300
 3cc3.3cc4    RH.U    [0000:fff00b70]   IO:  inb 0061 => 2c
 3cc5.3cc6    .H..    [0000:fff00b70]   MCHBAR: [000014ac] => c0002121
+
+
+
 3cc5.3cc8    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 8301
 3cc5.3cc9    .H..    [0000:fff00c11]   MCHBAR: [0000121c] <= 8301
 3cc5.3cca    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 00838301
@@ -2108,6 +2171,7 @@ F raminit_receive_enable_calibration()
 4367.4370    .H..    [0000:fff00b70]   MCHBAR: [000015f0] <= 0300
 4371.4372    RH.U    [0000:fff00b70]   IO:  inb 0061 => 2c
 4373.4374    .H..    [0000:fff00b70]   MCHBAR: [000014ac] => c0002121
+
 4373.4376    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 8781
 4373.4377    .H..    [0000:fff00c11]   MCHBAR: [0000121c] <= 8781
 4373.4378    .H..    [0000:fff00c11]   MCHBAR: [0000121c] => 00838781
@@ -2144,5 +2208,7 @@ F raminit_receive_enable_calibration()
 4394.439d    .H..    [0000:fff00b70]   MCHBAR: [000015f0] <= 0300
 439e.439f    RH.U    [0000:fff00b70]   IO:  inb 0061 => 3c
 43a0.43a1    .H..    [0000:fff00b70]   MCHBAR: [000014ac] => c0002121
+
+
 43a6.43a7    .H..    [0000:fff01d1f]   PCI: 0:00.0 [0df] => 00
 43a6.43a8    .H..    [0000:fff01d1f]   PCI: 0:00.0 [0df] <= f0

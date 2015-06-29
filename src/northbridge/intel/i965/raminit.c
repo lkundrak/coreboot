@@ -1108,7 +1108,7 @@ static void prejedec_memory_map(const dimminfo_t *const dimms, channel_mode_t mo
 		mode = CHANNEL_MODE_DUAL_ASYNC;
 
 	program_memory_map(dimms, mode, 1, 0);
-	MCHBAR32(DCC_MCHBAR) |= DCC_NO_CHANXOR;
+	//MCHBAR32(DCC_MCHBAR) |= DCC_NO_CHANXOR;
 }
 
 #if 0
@@ -1689,6 +1689,8 @@ u32 raminit_get_rank_addr(unsigned int channel, unsigned int rank)
 	return ((reg & CxDRBy_BOUND_MASK(rank)) >> CxDRBy_BOUND_SHIFT(rank)) << 25;
 }
 
+void raminit_reset_readwrite_pointers(void) {
+}
 #if 0
 void raminit_reset_readwrite_pointers(void) {
 	MCHBAR32(0x1234) |=  (1 <<  6);
@@ -1957,6 +1959,10 @@ static void jedec_init(const timings_t *const timings,
 / 0000 0000 0000 0011 1000 0000 0000 0000 = 0x00038000
 / 0000 0000 0000 0100 1000 0000 0000 0000 = 0x00048000
 / 0000 0000 0000 0100 0000 0000 0000 0000 = 0x00040000
+
+/ 0000 0000 0000 0100 0000 0100 0000 0010 = 0x00040402
+
+
 /            XX 22:21 EMRS command (when SMS = 100b)			#define DCC_SET_EREG_SHIFT      21
 /									#define DCC_SET_EREG_MASK       (DCC_CMD_MASK | (3 << DCC_SET_EREG_SHIFT))
 /									#define DCC_SET_EREGx(x)        ((DCC_SET_EREG |                           \
@@ -1996,8 +2002,10 @@ static void jedec_init(const timings_t *const timings,
 / fff01a03:       8b 09                   mov    (%ecx),%ecx
 / fff01a05:       89 4d f0                mov    %ecx,-0x10(%ebp)
 /
+/ [[[3ad2.3ad3    R.Q.    [0000:fff019c4]   MEM:  readl 00000000 => 00000000]]]
+/
 / 0000 0000 0010 0100 1000 0000 0000 0000 = 0x00248000
-/	DCC_SET_EREGx(3)
+/	DCC_SET_EREGx(3) EMRS(2)
 / fff01a08:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
 / fff01a0e:       81 e1 ff ff bc ff       and    $0xffbcffff,%ecx
 / fff01a14:       81 c9 00 00 24 00       or     $0x240000,%ecx
@@ -2008,7 +2016,7 @@ static void jedec_init(const timings_t *const timings,
 / fff01a25:       89 4d f0                mov    %ecx,-0x10(%ebp)
 /
 / 0000 0000 0100 0100 1000 0000 0000 0000 = 0x00448000
-/	DCC_SET_EREGx(5)
+/	DCC_SET_EREGx(5) EMRS(3)
 / fff01a28:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
 / fff01a2e:       81 e1 ff ff dc ff       and    $0xffdcffff,%ecx
 / fff01a34:       81 c9 00 00 44 00       or     $0x440000,%ecx
@@ -2019,7 +2027,7 @@ static void jedec_init(const timings_t *const timings,
 / fff01a45:       89 4d f0                mov    %ecx,-0x10(%ebp)
 /
 / 0000 0000 0000 0100 1000 0000 0000 0000 = 0x00048000
-/	DCC_SET_EREGx(1)
+/	DCC_SET_EREGx(1) EMRS(1)
 / fff01a48:       8b 0d 00 42 d1 fe       mov    0xfed14200,%ecx
 / fff01a4e:       23 ce                   and    %esi,%ecx
 / fff01a50:       0b ca                   or     %edx,%ecx
@@ -2043,6 +2051,8 @@ static void jedec_init(const timings_t *const timings,
 / fff01b0a:       8b 5d f8                mov    -0x8(%ebp),%ebx
 / fff01b0d:       8b 1b                   mov    (%ebx),%ebx
 / fff01b0f:       89 5d f0                mov    %ebx,-0x10(%ebp)
+/
+/ [[[3aef.3af0    R.Q.    [0000:fff01ac1]   MEM:  readl 00003a58 => 00000000]]]
 /
 / 0000 0000 0000 0010 1000 0000 0000 0000 = 0x00028000
 / 	all banks precharge
@@ -2096,6 +2106,8 @@ static void jedec_init(const timings_t *const timings,
 / fff01b97:       8b 09                   mov    (%ecx),%ecx
 / fff01b99:       89 4d f0                mov    %ecx,-0x10(%ebp)
 /
+/ [[[3afa.3afb    R.Q.    [0000:fff01ac1]   MEM:  readl 00001e00 => 00000000]]]
+/
 / 0000 0000 0000 0100 0000 0000 0000 0000 = 0x00040000
 /	DCC_SET_EREGx(1) + reserved
 / fff01b9c:       81 25 00 42 d1 fe ff    andl   $0xffff7fff,0xfed14200
@@ -2117,7 +2129,9 @@ static void jedec_init(const timings_t *const timings,
 	MCHBAR32(0x15f0) |= (1 << 9);
 #endif
 
+printk (BIOS_SPEW, "FFF0  <0x%08x> ===========----------\n", MCHBAR32(DCC_MCHBAR));
 	MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | DCC_CMD_NOP;
+printk (BIOS_SPEW, "FFF0  <0x%08x> NOP\n", MCHBAR32(DCC_MCHBAR));
 
 #if 0
 	u8 reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
@@ -2127,15 +2141,17 @@ static void jedec_init(const timings_t *const timings,
 	udelay(2);
 #endif
 
-	static const u8 wr_lut[] = { 1, 2, 3, 4, 5, 5, 6, 6 };
+//	static const u8 wr_lut[] = { 1, 2, 3, 4, 5, 5, 6, 6 };
 
 //	const int WL = ((timings->tWL - 5) & 7) << 6;
-	const int ODT_120OHMS = (1 << 9);
-	const int ODS_34OHMS = (1 << 4);
-	const int WR = (wr_lut[timings->tWR - 5] & 7) << 12;
+	const int ODT_150OHMS = (1 << 9);
+	const int OCD_DEFAULT = (7 << 10);
+	const int OCD_EXIT = (0 << 10);
+	const int WR = (timings->tWR - 1) << 12;
 	const int DLL1 = 1 << 11;
-	const int CAS = ((timings->CAS - 4) & 7) << 7;
+	const int CAS = timings->CAS << 7;
 	const int INTERLEAVED = 1 << 6;/* This is READ Burst Type == interleaved. */
+	const int BURST_LEN = 3 << 3; // xxx: constant?
 
 	int ch, r;
 	FOR_EACH_POPULATED_RANK(dimms, ch, r) {
@@ -2146,39 +2162,71 @@ static void jedec_init(const timings_t *const timings,
 	
 		MCHBAR32(DCC_MCHBAR) |= 1 << 15;
 
-		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | (2 << DCC_CMD_SHIFT);
 #ifndef YOLO
 #define read32(n) do { if(0){ (void)(n); } } while (0)
 #endif
+
+printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) -----------\n", MCHBAR32(DCC_MCHBAR), rankaddr);
+		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | (2 << DCC_CMD_SHIFT);
 		read32(rankaddr);
+printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) NOP?\n", MCHBAR32(DCC_MCHBAR), rankaddr);
 
 		//MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(2);
 		//read32(rankaddr | WL);
 
 		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(3);
 		read32(rankaddr);
+printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) EREGx 3 EMRS(2)\n", MCHBAR32(DCC_MCHBAR), rankaddr);
 
 		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(5);
 		read32(rankaddr);
+printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) EREGx 5 EMRS(3)\n", MCHBAR32(DCC_MCHBAR), rankaddr);
 
 		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(1);
-		read32(rankaddr | ODT_120OHMS | ODS_34OHMS);
+// DQS disable = 0x200
+//		read32(rankaddr | ODT_120OHMS | ODS_34OHMS);
+		read32(rankaddr | ODT_150OHMS);
+printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) EREGx 1 EMRS(1)\n", MCHBAR32(DCC_MCHBAR), rankaddr | ODT_150OHMS);
+
+// Host address lines [12:3] are
+// mapped to MA[9:0], and HA[13] is mapped to MA[11].
+// 
+//                                       MA0
+//                                       HA3
+//                                       | HA0
+//                                       |  |
+// 0000 1000  0000 0000  0011 1010  0101 1000 = 0x3a58
+// 0000 1000  0000 0000  0011 0010  0101 1000 = 0x3258
+//                                    xx x - burst length 3
+//                                   x - burst type interleave
+//                              xx  x - cas latency 100 = 4
+//                             x - test mode = 0
+//                            x - dll enable
+//                        xxx - twr cycles 011 = 4
+//                    x - power down slow mode
 
 		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | DCC_SET_MREG;
-		read32(rankaddr | WR | DLL1 | CAS | INTERLEAVED); // ??? or
+		read32(rankaddr | WR | DLL1 | CAS | INTERLEAVED | BURST_LEN);
+printk (BIOS_SPEW, "FFF1  <0x%08x> (0x%08x) MREG\n", MCHBAR32(DCC_MCHBAR), rankaddr | WR | DLL1 | CAS | INTERLEAVED | BURST_LEN);
 
 		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | (2 << DCC_CMD_SHIFT);
+printk (BIOS_SPEW, "FFF1  <0x%08x> (0x%08x) all banks precharge\n", MCHBAR32(DCC_MCHBAR), rankaddr);
 		read32(rankaddr);
 
 		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | (6 << DCC_CMD_SHIFT);
+printk (BIOS_SPEW, "FFF1  <0x%08x> (0x%08x) CBRS enable\n", MCHBAR32(DCC_MCHBAR), rankaddr);
 		read32(rankaddr);
 		read32(rankaddr);
 
 		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | DCC_SET_MREG;
-		read32(rankaddr | WR        | CAS | INTERLEAVED); // ??? or
+		read32(rankaddr | WR | 0 /* no DLL */ | CAS | INTERLEAVED | BURST_LEN);
+printk (BIOS_SPEW, "FFF2  <0x%08x> (0x%08x) MREG\n", MCHBAR32(DCC_MCHBAR), rankaddr | WR | 0 /* no DLL */ | CAS | INTERLEAVED | BURST_LEN); // ??? or
 
 		MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_SET_EREG_MASK) | DCC_SET_EREGx(1);
-		read32(rankaddr | ODT_120OHMS | ODS_34OHMS); // ???
+		read32(rankaddr | ODT_150OHMS | OCD_DEFAULT);
+		read32(rankaddr | ODT_150OHMS | OCD_EXIT);
+printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) EREGx 1 EMRS(1)\n", MCHBAR32(DCC_MCHBAR), rankaddr | ODT_150OHMS | OCD_DEFAULT);
+printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) EREGx 1 EMRS(1)\n", MCHBAR32(DCC_MCHBAR), rankaddr | ODT_150OHMS | OCD_EXIT);
 
 #ifndef YOLO
 #undef read32
@@ -2415,5 +2463,8 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	raminit_thermal(sysinfo);
 	init_igd(sysinfo);
 #endif
+// FFF
+//	raminit_receive_enable_calibration(timings, dimms);
+
 	sdram_dump_mchbar_registers();
 }
