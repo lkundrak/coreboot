@@ -5,12 +5,16 @@ set -e
 # html2ps dimms.html >dimms.ps ; ps2pdf dimms.ps; evince dimms.pdf
 
 W=-Werror
-cc -O0 -m32 -D__PRE_RAM__ -fno-builtin -include src/include/kconfig.h -Ibuild -Isrc/arch/x86/include -Isrc/include -Isrc src/northbridge/intel/i965/raminit.c src/northbridge/intel/i965/ddr2.c src/northbridge/intel/i965/ram_calc.c src/lib/clog2.c test/emu.c -Wall -g3 -o test/emu $W
+cc -DUSTEST -O0 -m32 -D__PRE_RAM__ -fno-builtin -include src/include/kconfig.h -Ibuild -Isrc/arch/x86/include -Isrc/include -Isrc src/northbridge/intel/i965/raminit.c src/northbridge/intel/i965/ddr2.c src/northbridge/intel/i965/ram_calc.c src/lib/clog2.c test/emu.c -Wall -g3 -o test/emu $W
 
-#valgrind --db-attach=no test/emu test/dimms/[67]
-if test/emu test/dimms/[67] >test/OUT
+#TESTBASE=6
+#TESTBASE=67
+#TESTBASE=65
+TESTBASE=45
+if test/emu test/dimms/[$TESTBASE] >test/OUT
 then
-	perl test/mchinit.pl test/initial-mchbar.c test/MCHINIT test/OUT
+	perl test/mchinit.pl test/initial-mchbar.c test/MCHINIT$TESTBASE test/OUT
+#	perl test/mchinit.pl test/initial-mchbar.c test/MCHINIT test/OUT
 else
 	cat test/OUT
 	false

@@ -2162,7 +2162,7 @@ printk (BIOS_SPEW, "FFF0  <0x%08x> NOP\n", MCHBAR32(DCC_MCHBAR));
 	
 		MCHBAR32(DCC_MCHBAR) |= 1 << 15;
 
-#ifndef YOLO
+#ifdef USTEST
 #define read32(n) do { if(0){ (void)(n); } } while (0)
 #endif
 
@@ -2228,7 +2228,7 @@ printk (BIOS_SPEW, "FFF2  <0x%08x> (0x%08x) MREG\n", MCHBAR32(DCC_MCHBAR), ranka
 printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) EREGx 1 EMRS(1)\n", MCHBAR32(DCC_MCHBAR), rankaddr | ODT_150OHMS | OCD_DEFAULT);
 printk (BIOS_SPEW, "FFF0  <0x%08x> (0x%08x) EREGx 1 EMRS(1)\n", MCHBAR32(DCC_MCHBAR), rankaddr | ODT_150OHMS | OCD_EXIT);
 
-#ifndef YOLO
+#ifdef TEST
 #undef read32
 #endif
 		MCHBAR32(DCC_MCHBAR) &= ~(1 << 15);
@@ -2389,11 +2389,10 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 // no idea what this is
 //3ab0.3ab1    .H..    [0000:fff01d38]   POST: *** ff32 ***
 //3ab6.3ab7    .H..    [0000:fff01edd]   MCHBAR: [00000400] => 20
-#ifdef YOLO
-	while (MCHBAR32(0x400) & 1) {}
-#else
+#ifdef USTEST
 	MCHBAR32(0x400) &= ~1;
 #endif
+	while (MCHBAR32(0x400) & 1) {}
 //3ab6.3abb    .H..    [0000:fff01ee5]   MCHBAR: [00000400] => 000e0020
 //3ab6.3abc    .H..    [0000:fff01ee5]   MCHBAR: [00000400] <= 000c0000
 	MCHBAR32(0x400) &= ~0x20020;

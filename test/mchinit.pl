@@ -8,6 +8,7 @@ while (<F>) {
 
 open (F, $ARGV[1]) or die "$ARGV[1]: $!";
 while (<F>) {
+	/POST.*ff40/ and last;
 	/MCHBAR: \[0000(.+)] <= (\S+)/ or next;
 
 	$off = (hex $1) % 4;
@@ -32,4 +33,4 @@ while (<F>) {
 
 $regs{$_}->[0] = $regs{$_}->[0] ? sprintf "0x%08x", $regs{$_}->[0] : " " x 10 foreach keys %regs;
 $regs{$_}->[1] = $regs{$_}->[1] ? sprintf "0x%08x", $regs{$_}->[1] : " " x 10 foreach keys %regs;
-printf "0x%04x: %s %s%s\n", $_, @{$regs{$_}}, (($regs{$_}->[1] =~ /\s/ or $regs{$_}->[0] eq $regs{$_}->[1]) ? '' : ' -') foreach sort { int($a) <=> int($b) } keys %regs;
+printf "0x%04x: %s %s%s\n", $_, @{$regs{$_}}, (($regs{$_}->[1] =~ /\s/ or $regs{$_}->[0] eq $regs{$_}->[1]) ? '' : ' - mismatch') foreach sort { int($a) <=> int($b) } keys %regs;
