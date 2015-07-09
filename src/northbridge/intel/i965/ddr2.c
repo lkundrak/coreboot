@@ -182,13 +182,16 @@ static u16 fsbclk(void)
 #endif
 #endif
 
-#if 0
-#else
 static fsb_clock_t fsbclk(void)
 {
-	return FSB_CLOCK_800MHz;
+	switch (MCHBAR32(CLKCFG_MCHBAR) & CLKCFG_FSBCLK_MASK) {
+	case 1: return FSB_CLOCK_533MHz;
+	case 3: return FSB_CLOCK_667MHz;
+	case 2: return FSB_CLOCK_800MHz;
+	default: printk(BIOS_DEBUG, "fsbclk: unknown register value %x\n", MCHBAR32(CLKCFG_MCHBAR) & 7);
+	}
+	return 0xffff;
 }
-#endif
 
 static mem_clock_t sdram_capabilities_max_supported_memory_frequency(void)
 {
@@ -199,17 +202,9 @@ static mem_clock_t sdram_capabilities_max_supported_memory_frequency(void)
 #endif
 
 	reg32 = pci_read_config32(PCI_DEV(0, 0x00, 0), 0xe4); /* CAPID0 + 4 */
-	reg32 = (reg32 >> 31) & 1;
+	reg32 = (reg32 >> 30) & 1;
 
-	switch (reg32) {
-	case 0: return MEM_CLOCK_533MHz;
-	case 1: return MEM_CLOCK_667MHz;
-	}
-	/* Newer revisions of this chipset rather support faster memory clocks,
-	 * so if it's a reserved value, return the fastest memory clock that we
-	 * know of and can handle
-	 */
-	return MEM_CLOCK_667MHz;
+	return reg32 ? MEM_CLOCK_533MHz : MEM_CLOCK_667MHz;
 }
 
 /**
