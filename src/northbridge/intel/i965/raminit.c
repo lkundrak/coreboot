@@ -253,6 +253,45 @@ static void reset_on_bad_warmboot(void)
 }
 
 #if 0
+static void
+clkcfg1 (void)
+{
+// reserved
+// 3878.3879    .H..    [0000:fff009a2]   MCHBAR: [00000c00] => 00020332
+// 3878.387a    .H..    [0000:fff009a2]   MCHBAR: [00000c00] <= 00000332
+// 3878.387b    .H..    [0000:fff009a2]   MCHBAR: [00000c00] => 00000332
+}
+#endif
+
+static void set_system_memory_frequency(const timings_t *const timings)
+{
+	/* Calculate wanted frequency setting. */
+	const int want_freq = 2 + timings->mem_clock;
+
+	/* Read current memory frequency. */
+	const u32 clkcfg = MCHBAR32(CLKCFG_MCHBAR);
+	int cur_freq = (clkcfg & CLKCFG_MEMCLK_MASK) >> CLKCFG_MEMCLK_SHIFT;
+	if (0 == cur_freq) {
+		/* Try memory frequency from scratchpad. */
+		printk(BIOS_DEBUG, "Reading current memory frequency from scratchpad.\n");
+		cur_freq = (MCHBAR16(SSKPD_MCHBAR) & SSKPD_CLK_MASK) >> SSKPD_CLK_SHIFT;
+	}
+
+	if (cur_freq != want_freq) {
+		printk(BIOS_DEBUG, "Changing memory frequency: old %x, new %x.\n", cur_freq, want_freq);
+		/* When writing new frequency setting, reset, then set update bit. */
+		MCHBAR32(CLKCFG_MCHBAR) = (MCHBAR32(CLKCFG_MCHBAR) & ~(CLKCFG_UPDATE | CLKCFG_MEMCLK_MASK)) |
+					  (want_freq << CLKCFG_MEMCLK_SHIFT);
+		MCHBAR32(CLKCFG_MCHBAR) = (MCHBAR32(CLKCFG_MCHBAR) & ~CLKCFG_MEMCLK_MASK) |
+					  (want_freq << CLKCFG_MEMCLK_SHIFT) | CLKCFG_UPDATE;
+		/* Reset update bit. */
+		MCHBAR32(CLKCFG_MCHBAR) &= ~CLKCFG_UPDATE;
+	}
+
+	MCHBAR32(CLKCFG_MCHBAR) &= ~(2 << 16);
+}
+
+#if 0
 static void set_system_memory_frequency(const timings_t *const timings)
 {
 	MCHBAR16(CLKCFG_MCHBAR + 0x60) &= ~(1 << 15);
@@ -1261,7 +1300,7 @@ static void ddr3_read_io_init(const mem_clock_t ddr3clock,
 
 
 // TODO set 0x0400, 0x040c, 0x41c
-static void memory_io_init(const mem_clock_t ddr3clock,
+static void memory_io_init(const mem_clock_t ddr2clock,
 			   const dimminfo_t *const dimms,
 			   const stepping_t stepping,
 			   const int sff)
@@ -1353,6 +1392,9 @@ static void memory_io_init(const mem_clock_t ddr3clock,
 #endif
 
 	// ddr2_write_io_init
+	// vaat, verify me!
+
+if (ddr2clock == MEM_CLOCK_533MHz) {
 	MCHBAR32(0x1490) = MCHBAR32(0x1590) = 0x00002121;
 	MCHBAR32(0x1494) = MCHBAR32(0x1594) = 0x00002121;
 	MCHBAR32(0x1498) = MCHBAR32(0x1598) = 0x00002121;
@@ -1362,8 +1404,36 @@ static void memory_io_init(const mem_clock_t ddr3clock,
 	MCHBAR32(0x14a8) = MCHBAR32(0x15a8) = 0x00002121;
 	MCHBAR32(0x14ac) = MCHBAR32(0x15ac) = 0x00002121;
 
-	MCHBAR32(0x1484) &= ~1;
-	MCHBAR32(0x1584) &= ~1;
+} else if (ddr2clock == MEM_CLOCK_667MHz) {
+	MCHBAR32(0x1490) = MCHBAR32(0x1590) = 0x00001111;
+	MCHBAR32(0x1494) = MCHBAR32(0x1594) = 0x00001111;
+	MCHBAR32(0x1498) = MCHBAR32(0x1598) = 0x00001111;
+	MCHBAR32(0x149c) = MCHBAR32(0x159c) = 0x00001111;
+	MCHBAR32(0x14a0) = MCHBAR32(0x15a0) = 0x00001111;
+	MCHBAR32(0x14a4) = MCHBAR32(0x15a4) = 0x00001111;
+	MCHBAR32(0x14a8) = MCHBAR32(0x15a8) = 0x00001111;
+	MCHBAR32(0x14ac) = MCHBAR32(0x15ac) = 0x00001111;
+
+} else {
+	die ("meh");
+}
+
+MCHBAR32(0x1484) = (MCHBAR32(0x1484) & ~0xff) | 0x00;
+MCHBAR32(0x1584) = (MCHBAR32(0x1584) & ~0xff) | 0x00;
+
+#if 0
+// laters
+	MCHBAR32(0x1484) = (MCHBAR32(0x1484) & ~0xff) | 0x68;
+	MCHBAR32(0x1584) = (MCHBAR32(0x1584) & ~0xff) | 0x68;
+	MCHBAR32(0x1484) = (MCHBAR32(0x1484) & ~0xff) | 0x48;
+	MCHBAR32(0x1584) = (MCHBAR32(0x1584) & ~0xff) | 0x48;
+
+printk (BIOS_SPEW, "> %08x <\n", MCHBAR32(0x1484));
+printk (BIOS_SPEW, "> %08x <\n", MCHBAR32(0x1584));
+printk (BIOS_SPEW, "> %08x <\n", MCHBAR32(0x1484));
+printk (BIOS_SPEW, "> %08x <\n", MCHBAR32(0x1584));
+die ("ment\n");
+#endif
 
 //3a98.3a99    .H..    [0000:fff01d38]   POST: *** ff30 ***
 
@@ -1732,16 +1802,6 @@ void sdram_dump_mchbar_registers(void)
 #endif
 
 void sdram_initialize(sysinfo_t *sysinfo965);
-
-static void
-clkcfg1 (void)
-{
-// reserved
-// 3878.3879    .H..    [0000:fff009a2]   MCHBAR: [00000c00] => 00020332
-// 3878.387a    .H..    [0000:fff009a2]   MCHBAR: [00000c00] <= 00000332
-// 3878.387b    .H..    [0000:fff009a2]   MCHBAR: [00000c00] => 00000332
-	MCHBAR32(CLKCFG_MCHBAR) &= ~(2 << 16);
-}
 
 static void
 wtf1 (void)
@@ -2316,7 +2376,9 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	reset_on_bad_warmboot();
 
 //////////////////////////////////////
-	clkcfg1();
+// FFF
+	/* Program system memory frequency. */
+	set_system_memory_frequency(timings);
 
 	/* Program clock crossing registers. */
 	clock_crossing_setup(timings->fsb_clock, timings->mem_clock, dimms);
