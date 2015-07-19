@@ -504,6 +504,11 @@ static void sdram_get_dram_channel_mode(sysinfo_t *sysinfo)
 	 * The capability register knows a lot about the channel configuration
 	 * but for now we stick with the information we gather via SPD.
 	 */
+	if (sysinfo->dimms[1].rank_capacity_mb == 0) {
+		sysinfo->selected_timings.channel_mode = CHANNEL_MODE_SINGLE;
+		printk(BIOS_DEBUG, "Only Single Channel populated.\n");
+		return;
+	}
 
 	if (sdram_capabilities_dual_channel()) {
 		if (sdram_capabilities_interleave() &&

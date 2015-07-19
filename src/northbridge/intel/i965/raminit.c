@@ -975,10 +975,14 @@ static void program_memory_map(const dimminfo_t *const dimms, const channel_mode
 	unsigned int base = 0; /* start of next rank in MB */
 	unsigned int total_mb[2] = { 0, 0 }; /* total memory per channel in MB */
 	FOR_EACH_CHANNEL(ch) {
-		if (mode == CHANNEL_MODE_DUAL_INTERLEAVED)
+printk (BIOS_SPEW, "FFE CH%d\n", ch);
+//		if (mode == CHANNEL_MODE_DUAL_INTERLEAVED
+//		    || mode == CHANNEL_MODE_DUAL_ASYNC)
 			/* In interleaved mode, start every channel from 0. */
 			base = 0;
-		for (r = 0; r < RANKS_PER_CHANNEL; r += 2) {
+		//for (r = 0; r < RANKS_PER_CHANNEL; r += 2) {
+		//FOR_EACH_POPULATED_RANK_IN_CHANNEL(dimms, ch, r) {
+		{ r = 0;
 			/* Fixed capacity for pre-jedec config. */
 			const unsigned int rank_capacity_mb =
 				prejedec ? 128 : dimms[ch].rank_capacity_mb;
@@ -986,16 +990,19 @@ static void program_memory_map(const dimminfo_t *const dimms, const channel_mode
 
 			/* Program bounds in CxDRBy. */
 			IF_RANK_POPULATED(dimms, ch, r) {
+printk (BIOS_SPEW, "FFE   CH%d R%d populated\n", ch, r);
 				base += rank_capacity_mb;
 				total_mb[ch] += rank_capacity_mb;
 			}
 			reg |= CxDRBy_BOUND_MB(r, base);
 			IF_RANK_POPULATED(dimms, ch, r+1) {
+printk (BIOS_SPEW, "FFE   CH%d R%d populated\n", ch, r+1);
 				base += rank_capacity_mb;
 				total_mb[ch] += rank_capacity_mb;
 			}
 			reg |= CxDRBy_BOUND_MB(r+1, base);
 
+printk (BIOS_SPEW, "FFE CH%d R%d 0x%x = 0x%08x\n", ch, r, CxDRBy_MCHBAR(ch, r), reg);
 			MCHBAR32(CxDRBy_MCHBAR(ch, r)) = reg;
 		}
 	}
@@ -1107,8 +1114,10 @@ static void prejedec_memory_map(const dimminfo_t *const dimms, channel_mode_t mo
 	if (CHANNEL_MODE_DUAL_INTERLEAVED == mode)
 		mode = CHANNEL_MODE_DUAL_ASYNC;
 
+printk (BIOS_SPEW, ">> FFE prejedec <<<\n");
 	program_memory_map(dimms, mode, 1, 0);
 	//MCHBAR32(DCC_MCHBAR) |= DCC_NO_CHANXOR;
+printk (BIOS_SPEW, ">> FFE eo prejedec <<<\n");
 }
 
 #if 0

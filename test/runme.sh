@@ -9,11 +9,13 @@ cc -DUSTEST -O0 -m32 -D__PRE_RAM__ -fno-builtin -include src/include/kconfig.h -
 
 #TESTBASE=6
 #TESTBASE=67
+#TESTBASE=76
 #TESTBASE=65
-TESTBASE=45
-if test/emu test/dimms/[$TESTBASE] >test/OUT
+# xxx
+TESTBASE=54
+if eval test/emu $(echo "test/dimms/$(echo $TESTBASE |sed 's/\(.\)\(.\)/\1,\2/g;s/\(...*\)/{\1}/')") >test/OUT
 then
-	perl test/mchinit.pl test/initial-mchbar.c test/MCHINIT$TESTBASE test/OUT
+	eval perl test/mchinit.pl test/initial-mchbar.c test/MCHINIT$TESTBASE test/OUT
 #	perl test/mchinit.pl test/initial-mchbar.c test/MCHINIT test/OUT
 else
 	cat test/OUT
