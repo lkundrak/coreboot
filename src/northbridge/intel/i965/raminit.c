@@ -597,22 +597,28 @@ static void dram_program_timings(const timings_t *const timings)
 {
 	/* Values are for DDR2. */
 	const int burst_length = 8;
-	const int tWTR = 2;
+	const int tWL = timings->CAS - 1; //XXX
+	int tWTR = 2;
+	int tRTP = 0; // 0 = 533, 1 = 666
+	unsigned int tRRD = 3; // dependent on page size!!!
 	int i;
 
-	const int tWL = timings->CAS - 1; //XXX
-	const int tRTP = 0; // 0 = 533, 1 = 666
-	unsigned int tRRD = 3; // dependent on page size!!!
+	if (timings->mem_clock == MEM_CLOCK_667MHz) {
+		tWTR = 3;
+		tRTP = 1;
+		tRRD = 4; // dependent on page size!!!
+	}
 
 	FOR_EACH_CHANNEL(i) {
 
 		// $ perl -e '$x= 0x2c910841 ; do { print $x >> 31 } while ($x = ($x << 1) & 0xffffffff); END {print "\n"}'
-		// 0010 1100  1001 0001  0000 1000  0100 0001 == 0x2c910841
+		// 0010 1100  1001 0001  0000 1000  0100 0001 == 0x2c910841 533
 		// 0010 1100  0111 0001  0000 1000  0100 0001 == 0x2c710841
+		// 0011 0100  1011 0001  0000 1000  0100 0001 == 0x34b10841 should be 667
 		//  xxx xx 30:26 0xd write to precharge spacing tWR
 		//            xxxx 23:20 0xb write to read
 		//                   xx  x 17:15 010b write to different rank read
-		//                         xx xx 13:10 read to wrtie
+		//                         xx xx 13:10 read to write
 		//                                  xxx 7:5 read to different rank write
 		//                                        xxx 2:0 read to different rank read
 
@@ -623,8 +629,8 @@ static void dram_program_timings(const timings_t *const timings)
 			((btb_wtp << CxDRT0_BtB_WtP_SHIFT) & CxDRT0_BtB_WtP_MASK) |
 			((btb_wtr << CxDRT0_BtB_WtR_SHIFT) & CxDRT0_BtB_WtR_MASK);
 
-		reg = (reg & ~(0x7 << 15)) | ((6 - timings->CAS) << 15);
-		reg = (reg & ~(0xf << 10)) | ((timings->CAS - 2) << 10);
+		reg = (reg & ~(0x7 << 15)) | ((4 + tWTR - timings->CAS) << 15);
+		reg = (reg & ~(0xf << 10)) | ((timings->CAS - tWTR) << 10);
 		reg = (reg & ~(0x7 << 5)) | (2 << 5);
 		reg = (reg & ~(0x7 << 0)) | (1 << 0);
 		MCHBAR32(CxDRT0_MCHBAR(i)) = reg;
@@ -637,8 +643,10 @@ static void dram_program_timings(const timings_t *const timings)
 		//                          x xx 12:10 (tRRD)
 		//                                  xxx 7:5 (tRCD)
 		//                                        xxx 2:0 (tTP)
-		// 0000 0001  0110 0000  1000 0100  0100 0010 = 0x01608442
-		// 0000 0001  0110 0000  0000 0100  0100 0010 = 0x01600442
+		// 0000 0001  0110 0000  1000 0100  0100 0010 == 0x01608442
+		// 0000 0001  0110 0000  0000 0100  0100 0010 == 0x01600442
+		// 0001 0001  1110 0000  1000 1000  0110 0011 == 0x11e08863 should be 667
+		// 0000 0001  1110 0000  1000 0100  0110 0011 == 0x01e08463
 
 		reg = MCHBAR32(CxDRT1_MCHBAR(i));
 		reg = (reg & ~(0x03 << 28)) | ((tRTP & 0x03) << 28);
@@ -655,10 +663,15 @@ static void dram_program_timings(const timings_t *const timings)
 		//                      xxx 14:12 must be 001 = 1
 		//                            xx xx 9:6 must be 0001 = 1
 		//                                  x xxxx reserved, but 0x1f -> 0x10 ???
+		// 0010 0010 0010 0010 0001 0000 0101 0000 == 0x22221050 should be 667
+		// 0010 0010 0001 1100 0001 0000 0101 0000 == 0x221c1050
 
 		reg = MCHBAR32(CxDRT2_MCHBAR(i));
 		reg = (reg & ~(0x7 << 24)) | (0x2 << 24);
-		reg = (reg & ~(0x1f << 17)) | ((14 & 0x1f) << 17); // table!!!
+		if (timings->mem_clock == MEM_CLOCK_667MHz)
+			reg = (reg & ~(0x1f << 17)) | ((17 & 0x1f) << 17); // table!!!
+		else
+			reg = (reg & ~(0x1f << 17)) | ((14 & 0x1f) << 17); // table!!!
 //		reg = (reg & ~(0x1f << 17)) | ((timings->tFAW & 0x1f) << 17);
 		reg = (reg & ~(0x7 << 12)) | (0x1 << 12);
 		reg = (reg & ~(0xf <<  6)) | (0x1 <<  6);
@@ -838,6 +851,8 @@ static void odt_setup(const timings_t *const timings, const int sff)
 	FOR_EACH_CHANNEL(ch) {
 // XXX defaults work well for 533. what else?
 		u32 reg = MCHBAR32(CxODT_LOW(ch));
+		if (timings->mem_clock == MEM_CLOCK_667MHz)
+			reg |= 0x1010;
 		MCHBAR32(CxODT_LOW(ch)) = reg;
 
 // 0110 0000  1001 0010  1000 0111  1000 1000 = 0x60928788
@@ -847,6 +862,8 @@ static void odt_setup(const timings_t *const timings, const int sff)
 		reg = MCHBAR32(CxODT_HIGH(ch));
 		reg |= 3 << 29;
 		reg |= 9 << 20;
+		if (timings->mem_clock == MEM_CLOCK_667MHz)
+			reg |= 1 << 16;
 		reg = (reg & ~(0xf << 0)) | (8 << 0);
 		MCHBAR32(CxODT_HIGH(ch)) = reg;
 	}
@@ -901,8 +918,11 @@ static void odt_setup(const timings_t *const timings, const int sff)
 static void misc_settings(const timings_t *const timings,
 			  const stepping_t stepping)
 {
-	int tRD = 5; // really? check!
+	int tRD = 5;
 	const int tWL = timings->CAS - 1; //XXX
+
+	if (timings->mem_clock == MEM_CLOCK_667MHz)
+		tRD = 6;
 
 	MCHBAR32(0x1260) = (MCHBAR32(0x1260) & ~(0xf)) | 1 << 31 | tRD;
 	MCHBAR32(0x1360) = (MCHBAR32(0x1360) & ~(0xf)) | 1 << 31 | tRD;
@@ -1046,19 +1066,40 @@ printk (BIOS_SPEW, "FFE CH%d R%d 0x%x = 0x%08x\n", ch, r, CxDRBy_MCHBAR(ch, r), 
 		}
 	}
 
+// 0x1208: 0x00090033 0x00000022 - mismatch        CxDRA_MCHBAR
+// 0x1308: 0x00000033 0x00000044 - mismatch        CxDRA_MCHBAR
+
+// 0000 0000  0000 1001  0000 0000  0011 0011 == 0x00090033 0x1208 ch0 should have [1: 8bank, 8kb]
+// 0000 0000  0000 0000  0000 0000  0011 0011 == 0x00000033 0x1308 ch1 should have [0: 4bank, 8kb]
+// 0000 0000  0000 0000  0000 0000  0010 0010 == 0x00000022 0x1208
+// 0000 0000  0000 0000  0000 0000  0100 0100 == 0x00000044 0x1208
+//               x x 20:19 -- Rank1 00 = 4 bank, 01 = 8 bank
+//                   xx  17:16 -- Rank0 00 = 4 bank, 01 = 8 bank
+//                                   xxx 6:4 Rank1 10 = 4kb, 11 = 8kb
+//                                        xxx 2:0 Rank0 10 = 4kb, 11 = 8kb
+
 	/* Program page size (CxDRA). */
+printk (BIOS_SPEW, "FFX ----\n");
 	FOR_EACH_CHANNEL(ch) {
 		u32 reg = MCHBAR32(CxDRA_MCHBAR(ch)) & ~CxDRA_PAGESIZE_MASK;
 		FOR_EACH_POPULATED_RANK_IN_CHANNEL(dimms, ch, r) {
+printk (BIOS_SPEW, "FFX r=%d ch=%d ps=%d b=%d\n", r, ch, dimms[ch].page_size, dimms[ch].banks);
 			/* Fixed page size for pre-jedec config. */
 			const unsigned int page_size = /* dimm page size in bytes */
 				prejedec ? 4096 : dimms[ch].page_size;
 			reg |= CxDRA_PAGESIZE(r, log2(page_size));
 			/* deferred to f5_27: reg |= CxDRA_BANKS(r, dimms[ch].banks); */
+			reg |= CxDRA_BANKS(r, dimms[ch].banks);
+
 		}
 		MCHBAR32(CxDRA_MCHBAR(ch)) = reg;
 	}
+printk (BIOS_SPEW, "FFX ----\n");
 #if 0 ///FFF
+FFX r=0 ch=0 ps=4096 b=4
+FFX r=1 ch=0 ps=4096 b=4
+FFX r=0 ch=1 ps=16384 b=8
+FFX r=1 ch=1 ps=16384 b=8
 #endif
 
 	/* Calculate memory mapping, all values in MB. */

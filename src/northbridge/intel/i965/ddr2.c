@@ -1546,10 +1546,17 @@ static struct dimm_size sdram_get_dimm_size(sysinfo_t *sysinfo, u16 dimmno)
 printk(BIOS_SPEW, "========================================\n");
 // FFF
 	sysinfo->dimms[dimmno / 2].banks = spd_read_byte(device, SPD_NUM_BANKS_PER_SDRAM);
-	sysinfo->dimms[dimmno / 2].page_size =
+	sysinfo->dimms[dimmno / 2].page_size = (1 << spd_read_byte(device, SPD_NUM_COLUMNS)) * 8;
+#if 0
+		(1 << spd_read_byte(device, SPD_NUM_COLUMNS)) *
+		(1 << (sysinfo->dimms[dimmno / 2].chip_width + 2)) /
+		(sysinfo->dimms[dimmno / 2].banks / 4);
+#endif
+#if 0
 		sysinfo->dimms[dimmno / 2].banks *
 		(1 << spd_read_byte(device, SPD_NUM_COLUMNS)) *
 		(1 << (sysinfo->dimms[dimmno / 2].chip_width + 2)) / 8;
+#endif
 
 	// XXX should reuse here sysinfo->dimms[i].banks = value & 0xff;
 	value = spd_read_byte(device, SPD_NUM_BANKS_PER_SDRAM);	/* banks */
