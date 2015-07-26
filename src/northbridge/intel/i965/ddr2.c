@@ -885,6 +885,17 @@ static void sdram_detect_smallest_tWR(sysinfo_t * sysinfo)
 
 static void sdram_detect_smallest_tRFC(sysinfo_t * sysinfo)
 {
+//// FIXME: IMPLEMENT ME
+	switch (sysinfo->selected_timings.mem_clock) {
+	case MEM_CLOCK_533MHz:
+		sysinfo->selected_timings.tRFC = 0x1c;
+		break;
+	case MEM_CLOCK_667MHz:
+		sysinfo->selected_timings.tRFC = 0x2b;
+		break;
+	default:
+		die ("meh");
+	}
 //// BANKSIZE!!!
 #if 0
 	int i, index = 0;

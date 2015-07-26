@@ -679,24 +679,26 @@ static void dram_program_timings(const timings_t *const timings)
 		MCHBAR32(CxDRT2_MCHBAR(i)) = reg;
 
 
-		// 0000 0000  1000 0011  1000 0111  1000 0001 = 0x00838781 CHAN 0
-		// 0000 0000  1000 0011  1000 0001  0000 0001 = 0x00838101 CHAN 1
+		// 0000 0000  1000 0011  1000 0111  1000 0001 = 0x00838781 CHAN 0 (not really!)
+		// 0000 0000  1000 0011  1000 0001  0000 0001 = 0x00838101 CHAN 1 533
+		// 0000 0001  0000 0101  0110 0001  0000 0010 = 0x01056102 666 should
+		// 0000 0001  0000 0011  1000 0001  0000 0010 = 0x01038102 666 has
 		//      xx 27:26 tXS 00 = tRFC + 10
 		//        xx  x 25:23 tCL
 		//               x xxxx  xxx 20:13 tRFC (14) 
 		//                          x xxxx  xxxx x
 		//                                        xxx 2:0 tWL
 
-		int tRFC = 0x1c; // fix negotiation!!!  // 0010101 tRFC 0x1c 28
 		reg = MCHBAR32(CxDRT3_MCHBAR(i));
 
 		reg = (reg & ~(0x03 << 26));
 		reg = (reg & ~(0x07 << 23)) | (((timings->CAS - 3) & 0x07) << 23);
-		reg = (reg & ~(0x7f << 13)) | ((tRFC & 0x7f) << 13);
+		reg = (reg & ~(0x7f << 13)) | ((timings->tRFC & 0x7f) << 13);
 		reg = (reg & ~(0x07 <<  0)) | (((tWL - 2) & 0x07) <<  0);
 
-		if (i == 0)
-			reg |= 0xf << 7; // reserved?!?!
+// nope?
+//		if (i == 0)
+//			reg |= 0xf << 7; // reserved?!?!
 
 		MCHBAR32(CxDRT3_MCHBAR(i)) = reg;
 
@@ -1403,7 +1405,15 @@ static void memory_io_init(const mem_clock_t ddr2clock,
 // 1000 1011 = 0x8b
 
 	tmp = MCHBAR32(0x142c);
-	tmp = (tmp & ~0xf) | 0xb; /// XXX clock freq dependent?
+//	tmp |= 1 << 31;
+//	tmp |= 1 << 30;
+	/// XXX clock freq dependent? YEP
+	if (ddr2clock == MEM_CLOCK_533MHz)
+		tmp = (tmp & ~0xf) | 0xb;
+	else if (ddr2clock == MEM_CLOCK_667MHz)
+		tmp = (tmp & ~0xf) | 0xa;
+	else
+		die ("meh");
 	MCHBAR32(0x142c) = tmp;
 
 	tmp = MCHBAR32(0x1438);

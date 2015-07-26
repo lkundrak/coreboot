@@ -8,7 +8,7 @@ while (<F>) {
 
 open (F, $ARGV[1]) or die "$ARGV[1]: $!";
 while (<F>) {
-	/POST.*ff40/ and last;
+	/POST.*ff39/ and last;
 	/MCHBAR: \[0000(.+)] <= (\S+)/ or next;
 
 	$off = (hex $1) % 4;
@@ -30,6 +30,9 @@ while (<F>) {
 	$regs{hex $1} or next;
 	$regs{hex $1}->[1] = hex $2;
 }
+
+# varies on DIMM configuration
+delete $regs{0x141c};
 
 $regs{$_}->[0] = $regs{$_}->[0] ? sprintf "0x%08x", $regs{$_}->[0] : " " x 10 foreach keys %regs;
 $regs{$_}->[1] = $regs{$_}->[1] ? sprintf "0x%08x", $regs{$_}->[1] : " " x 10 foreach keys %regs;
