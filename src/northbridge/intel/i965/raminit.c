@@ -1347,6 +1347,7 @@ static void memory_io_init(const mem_clock_t ddr2clock,
 			   const int sff)
 {
 	u32 tmp;
+	int ch;
 
 #if 0
 	if (stepping < STEPPING_B1)
@@ -1370,10 +1371,15 @@ static void memory_io_init(const mem_clock_t ddr2clock,
 // 1100 0000  0000 0000  0100 0001  1100 0000 = 0xc00041c0
 // 1100 0000  0000 0000  0100 0001  1000 0000 = 0xc0004180 // 1434 is magic -- not a final value here!
 // 0000 0000  0000 0000  0000 0001  0000 0000 = 0x00000100
-// xx                     x         x 7 DDR2 in orig
+// xxxx CH0 CH1 CH2 CH3 populated?
+//                        x         x 7 DDR2 in orig
 //                                   x DRAM powerup XXX dram_powerup()
+	tmp = MCHBAR32(0x1434);
+	tmp |= (1 << 14) | (1 << 7);
+	FOR_EACH_POPULATED_CHANNEL(dimms, ch)
+		tmp |= 1 << (31 - ch);
+	MCHBAR32(0x1434) |= tmp;
 
-	MCHBAR32(0x1434) |= (3 << 30) | (1 << 14) | (1 << 7);
 	tmp = MCHBAR32(0x140c);
 	tmp = (tmp & ~(0xf << 8)) | (1 << 8); // XXX clock freq dependent
 	MCHBAR32(0x140c) = tmp;
