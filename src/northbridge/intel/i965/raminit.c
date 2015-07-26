@@ -1475,8 +1475,8 @@ if (ddr2clock == MEM_CLOCK_533MHz) {
 	die ("meh");
 }
 
-MCHBAR32(0x1484) = (MCHBAR32(0x1484) & ~0xff) | 0x00;
-MCHBAR32(0x1584) = (MCHBAR32(0x1584) & ~0xff) | 0x00;
+FOR_EACH_POPULATED_CHANNEL(dimms, ch)
+	MCHBAR32(0x1484 + ch * 0x100) = (MCHBAR32(0x1484 + ch * 0x100) & ~0xff) | 0x00;
 
 #if 0
 // laters
