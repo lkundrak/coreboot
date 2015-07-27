@@ -216,7 +216,9 @@ enum {
 					(could be reduced to 10 bytes) */
 
 
+#ifndef USTEST
 #define DEFAULT_MCHBAR		0xfed14000
+#endif
 #define DEFAULT_DMIBAR		0xfed18000
 #define DEFAULT_EPBAR		0xfed19000
 #define DEFAULT_HECIBAR		0xfed1a000

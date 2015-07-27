@@ -5,7 +5,8 @@ set -e
 # html2ps dimms.html >dimms.ps ; ps2pdf dimms.ps; evince dimms.pdf
 
 W=-Werror
-cc -DUSTEST -O0 -m32 -D__PRE_RAM__ -fno-builtin -include src/include/kconfig.h -Ibuild -Isrc/arch/x86/include -Isrc/include -Isrc src/northbridge/intel/i965/raminit.c src/northbridge/intel/i965/ddr2.c src/northbridge/intel/i965/ram_calc.c src/lib/clog2.c test/emu.c -Wall -g3 -o test/emu $W
+sed '/CONFIG_MMCONF_BASE_ADDRESS/d' -i build/config.h
+cc -DUSTEST -O0 -m32 -D__PRE_RAM__ -fno-builtin -include src/include/kconfig.h -Ibuild -Isrc/arch/x86/include -Isrc/include -DCONFIG_MMCONF_BASE_ADDRESS=0x10000000 -DDEFAULT_MCHBAR=0x20000000 -Isrc src/northbridge/intel/i965/raminit.c src/northbridge/intel/i965/ddr2.c src/northbridge/intel/i965/ram_calc.c src/lib/clog2.c test/emu.c -Wall -g3 -o test/emu $W
 
 #TESTBASE=6
 TESTBASE=67
