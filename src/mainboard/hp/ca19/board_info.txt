@@ -1,0 +1,8 @@
+Category: mini
+Vendor name: Neoware Inc.
+Board name: CA19
+ROM package: PLCC
+ROM protocol: Parallel
+ROM socketed: y
+Flashrom support: y
+Release year: 2006
