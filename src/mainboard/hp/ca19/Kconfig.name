@@ -1,0 +1,2 @@
+config BOARD_HP_NEOWARE_CA19
+	bool "Neoware CA19"
