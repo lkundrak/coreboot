@@ -19,9 +19,9 @@
 /* Static resources for the VT8237R southbridge */
 
 #define VT8237R_APIC_ID			0x2
-#define VT8237R_ACPI_IO_BASE		0x500
+#define VT8237R_ACPI_IO_BASE		0x400
 #define DEFAULT_PMBASE			VT8237R_ACPI_IO_BASE
-#define VT8237R_SMBUS_IO_BASE		0x400
+#define VT8237R_SMBUS_IO_BASE		0x500
 /* 0x0 disabled, 0x2 reserved, 0xf = IRQ15 */
 #define VT8237R_ACPI_IRQ		0x9
 #define VT8237S_SPI_MEM_BASE		0xfed02000UL
