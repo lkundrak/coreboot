@@ -20,6 +20,6 @@ config MAINBOARD_PART_NUMBER
 
 config IRQ_SLOT_COUNT
 	int
-	default 10
+	default 6
 
 endif # BOARD_HP_NEOWARE_CA19
