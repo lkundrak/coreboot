@@ -46,5 +46,8 @@ static void bootblock_southbridge_init(void)
 		return;
 
 found:
-	pci_write_config8(dev, 0x41, 0x7f);
+	// 4MB flash
+	//pci_write_config8(dev, 0x41, 0x7f);
+	// 512 k
+	pci_write_config8(dev, 0x41, 0xc0);
 }

@@ -80,6 +80,7 @@ void main(unsigned long bist)
 {
 	/* Enable multifunction for northbridge. */
 	pci_write_config8(ctrl.d0f0, 0x4f, 0x01);
+	pci_write_config8(PCI_DEV(0, 0x11, 0), 0x98, 0x00);
 
 	w83697hf_set_clksel_48(SERIAL_DEV);
 	winbond_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
