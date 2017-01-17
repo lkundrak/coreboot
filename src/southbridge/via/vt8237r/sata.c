@@ -43,6 +43,11 @@ static void sata_ii_init(struct device *dev)
 {
 	u8 reg;
 
+	if (!dev->enabled) {
+		printk(BIOS_DEBUG, "XXX: Skip SATA!\n");
+		return;
+	}
+
 	sata_i_init(dev);
 
 	/*
