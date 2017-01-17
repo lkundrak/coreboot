@@ -187,7 +187,7 @@ void enable_smbus(void)
 	 * 7 = SMBus Clock from RTC 32.768KHz
 	 * 5 = Internal PLL reset from susp
 	 */
-	pci_write_config8(dev, VT8237R_POWER_WELL, 0xa0);
+//	pci_write_config8(dev, VT8237R_POWER_WELL, 0xa0);
 
 	/* Enable SMBus. */
 	pci_write_config16(dev, VT8237R_SMBUS_IO_BASE_REG,
@@ -197,12 +197,12 @@ void enable_smbus(void)
 	pci_write_config8(dev, VT8237R_SMBUS_HOST_CONF, 0x01);
 
 	/* Make it work for I/O. */
-	pci_write_config16(dev, PCI_COMMAND, PCI_COMMAND_IO);
+//	pci_write_config16(dev, PCI_COMMAND, PCI_COMMAND_IO);
 
-	smbus_reset();
+//	smbus_reset();
 
 	/* Reset the internal pointer. */
-	inb(SMBHSTCTL);
+//	inb(SMBHSTCTL);
 }
 
 /**
