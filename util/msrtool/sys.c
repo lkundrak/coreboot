@@ -36,7 +36,7 @@ struct cpuid_t *cpuid(void) {
 	asm ("cpuid" : "=b" (outebx) : "a" (0) : "%ecx", "%edx");
 #endif
 
-	id.vendor = (outebx == 0x756e6547) ? VENDOR_INTEL : VENDOR_AMD;
+	id.vendor = outebx;
 
 /* Then, identificate CPU itself */
 #if defined(__DARWIN__) && !defined(__LP64__)
@@ -58,9 +58,9 @@ struct cpuid_t *cpuid(void) {
 	outeax >>= 8;
 	id.ext_model = outeax & 0xf;
 	outeax >>= 4;
-	id.ext_family = outeax & 0xff;
-	if ((0xf == id.family) || ((VENDOR_INTEL == id.vendor)
-			&& (0x6 == id.family))) {
+	id.ext_family = outeax & 0xfe;
+	if ((VENDOR_AMD == id.vendor && 0xf == id.family) ||
+	    (VENDOR_INTEL == id.vendor && 0x6 == id.family)) {
 		/* Intel says always do this, AMD says only for family f */
 		id.model |= (id.ext_model << 4);
 		id.family += id.ext_family;
