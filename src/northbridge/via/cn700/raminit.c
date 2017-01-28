@@ -62,16 +62,23 @@ static void c7_cpu_setup(device_t dev)
 {
 	/* Host bus interface registers (D0F2 0x50-0x67) */
 	/* Request phase control */
+udelay(200);
 	pci_write_config8(dev, 0x50, 0x88);
 	/* CPU Interface Control */
+udelay(200);
 	pci_write_config8(dev, 0x51, 0x7a);
+udelay(200);
 	pci_write_config8(dev, 0x52, 0x6f);
 	/* Arbitration */
+udelay(200);
 	pci_write_config8(dev, 0x53, 0x88);
 	/* Miscellaneous Control */
+udelay(200);
 	pci_write_config8(dev, 0x54, 0x1e);
+udelay(200);
 	pci_write_config8(dev, 0x55, 0x16);
 	/* Write Policy */
+udelay(200);
 	pci_write_config8(dev, 0x56, 0x01);
 	/* Miscellaneous Control */
 	/*
@@ -82,57 +89,93 @@ static void c7_cpu_setup(device_t dev)
 	 *      110/111 : Reserved
 	 */
 	/* CPU Miscellaneous Control */
+udelay(200);
 	pci_write_config8(dev, 0x59, 0x44);
+////////////////////////////////////////
 	/* Write Policy */
+udelay(200);
 	pci_write_config8(dev, 0x5d, 0xb2);
 	/* Bandwidth Timer */
+udelay(200);
 	pci_write_config8(dev, 0x5e, 0x88);
 	/* CPU Miscellaneous Control */
+udelay(200);
 	pci_write_config8(dev, 0x5f, 0xc7);
 
 	/* Line DRDY# Timing Control */
+udelay(200);
 	pci_write_config8(dev, 0x60, 0xff);
+udelay(200);
 	pci_write_config8(dev, 0x61, 0xff);
+udelay(200);
 	pci_write_config8(dev, 0x62, 0x0f);
 	/* QW DRDY# Timing Control */
+udelay(200);
 	pci_write_config8(dev, 0x63, 0xff);
+udelay(200);
 	pci_write_config8(dev, 0x64, 0xff);
+udelay(200);
 	pci_write_config8(dev, 0x65, 0x0f);
 	/* Read Line Burst DRDY# Timing Control */
+udelay(200);
 	pci_write_config8(dev, 0x66, 0xff);
+udelay(200);
 	pci_write_config8(dev, 0x67, 0x30);
+
+////////////////////////////////////////
 
 	/* Host Bus I/O Circuit (see datasheet) */
 	/* Host Address Pullup/down Driving */
+udelay(200);
 	pci_write_config8(dev, 0x70, 0x11);
+udelay(200);
 	pci_write_config8(dev, 0x71, 0x11);
+udelay(200);
 	pci_write_config8(dev, 0x72, 0x11);
+udelay(200);
 	pci_write_config8(dev, 0x73, 0x11);
 	/* Miscellaneous Control */
+udelay(200);
 	pci_write_config8(dev, 0x74, 0x35);
 	/* AGTL+ I/O Circuit */
+udelay(200);
 	pci_write_config8(dev, 0x75, 0x28);
 	/* AGTL+ Compensation Status */
+udelay(200);
 	pci_write_config8(dev, 0x76, 0x74);
 	/* AGTL+ Auto Compensation Offest */
+udelay(200);
 	pci_write_config8(dev, 0x77, 0x00);
 	/* Host FSB CKG Control */
+udelay(200);
 	pci_write_config8(dev, 0x78, 0x0a);
 	/* Address/Address Clock Output Delay Control */
+////////////////////////////////////////
+udelay(200);
 	pci_write_config8(dev, 0x79, 0xaa);
 	/* Address Strobe Input Delay Control */
+udelay(200);
 	pci_write_config8(dev, 0x7a, 0x24);
 	/* Address CKG Rising/Falling Time Control */
+udelay(200);
 	pci_write_config8(dev, 0x7b, 0xaa);
 	/* Address CKG Clock Rising/Falling Time Control */
+udelay(200);
 	pci_write_config8(dev, 0x7c, 0x00);
 	/* Undefined (can't remember why I did this) */
+udelay(200);
 	pci_write_config8(dev, 0x7d, 0x6d);
+udelay(200);
 	pci_write_config8(dev, 0x7e, 0x00);
+udelay(200);
 	pci_write_config8(dev, 0x7f, 0x00);
+udelay(200);
 	pci_write_config8(dev, 0x80, 0x1b);
+udelay(200);
 	pci_write_config8(dev, 0x81, 0x0a);
+udelay(200);
 	pci_write_config8(dev, 0x82, 0x0a);
+udelay(200);
 	pci_write_config8(dev, 0x83, 0x0a);
 }
 
