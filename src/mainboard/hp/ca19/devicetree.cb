@@ -14,8 +14,8 @@ chip northbridge/via/cn700			# Northbridge
       # Both cables are 40pin.
       register "ide0_80pin_cable" = "0"
       register "ide1_80pin_cable" = "0"
-      register "fn_ctrl_lo" = "0x88"
-      register "fn_ctrl_hi" = "0x9d"
+      register "fn_ctrl_lo" = "0x80"
+      register "fn_ctrl_hi" = "0x1d"
       device pci f.0 off end			# SATAN
       device pci f.1 on end			# IDE
       device pci 10.0 on end			# UHCI
