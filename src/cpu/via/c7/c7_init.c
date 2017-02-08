@@ -205,6 +205,15 @@ static void c7_init(struct device *dev)
 	msr.hi = 0;
 	wrmsr(MSR_IA32_CLOCK_MODULATION, msr);
 
+	/* Unknown */
+	msr.hi = 0;
+	msr.lo = 0xfffffe87;
+	wrmsr(0x1168, msr);
+	msr.lo = 0x4e2;
+	wrmsr(0x116a, msr);
+	msr.lo = 0x2e;
+	wrmsr(0x116b, msr);
+
 	/* Turn on cache */
 	x86_enable_cache();
 
