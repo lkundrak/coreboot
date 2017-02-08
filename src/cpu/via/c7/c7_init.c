@@ -28,6 +28,8 @@
 #define MSR_IA32_PERF_CTL		0x00000199
 #define MSR_IA32_CLOCK_MODULATION	0x0000019a
 #define MSR_IA32_MISC_ENABLE		0x000001a0
+#define MSR_IA32_FCR			0x00001107
+#define MSR_IA32_FCR2			0x00001108
 
 static int c7a_speed_translation[] = {
 //      LFM     HFM
@@ -189,10 +191,15 @@ static void c7_init(struct device *dev)
 	/* Gear up */
 	set_c7_speed(c.x86_model);
 
-	/* Enable APIC */
-	msr = rdmsr(0x1107);
-	msr.lo |= 1<<24;
-	wrmsr(0x1107, msr);
+	msr = rdmsr(MSR_IA32_FCR);
+	msr.lo |= 1<<24; /* Enable APIC */
+	msr.hi |= 1<<22; /* "reserved" */
+	wrmsr(MSR_IA32_FCR, msr);
+
+	msr = rdmsr(MSR_IA32_FCR2);
+	msr.lo &= 0x0000ffff;
+	msr.lo |= 0x0ef00000; /* "reserved" */
+	wrmsr(MSR_IA32_FCR2, msr);
 
 	msr.lo = 0x8; // 37.5%
 	msr.hi = 0;
