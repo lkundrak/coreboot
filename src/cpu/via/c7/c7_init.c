@@ -24,9 +24,10 @@
 #include <cpu/x86/lapic.h>
 #include <cpu/x86/cache.h>
 
-#define MSR_IA32_PERF_STATUS	0x00000198
-#define MSR_IA32_PERF_CTL	0x00000199
-#define MSR_IA32_MISC_ENABLE	0x000001a0
+#define MSR_IA32_PERF_STATUS		0x00000198
+#define MSR_IA32_PERF_CTL		0x00000199
+#define MSR_IA32_CLOCK_MODULATION	0x0000019a
+#define MSR_IA32_MISC_ENABLE		0x000001a0
 
 static int c7a_speed_translation[] = {
 //      LFM     HFM
@@ -192,6 +193,10 @@ static void c7_init(struct device *dev)
 	msr = rdmsr(0x1107);
 	msr.lo |= 1<<24;
 	wrmsr(0x1107, msr);
+
+	msr.lo = 0x8; // 37.5%
+	msr.hi = 0;
+	wrmsr(MSR_IA32_CLOCK_MODULATION, msr);
 
 	/* Turn on cache */
 	x86_enable_cache();
