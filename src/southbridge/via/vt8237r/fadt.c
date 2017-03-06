@@ -51,8 +51,7 @@ void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 	fadt->dsdt = (u32)dsdt;
 	fadt->preferred_pm_profile = 0;
 	fadt->sci_int = 9;
-//	fadt->smi_cmd = 0;
-	fadt->smi_cmd = VT8237R_ACPI_IO_BASE + 0x2f;
+	fadt->smi_cmd = 0;
 	fadt->acpi_enable = 0;
 	fadt->acpi_disable = 0;
 	fadt->s4bios_req = 0x0;
@@ -63,7 +62,7 @@ void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 	fadt->pm1a_cnt_blk = VT8237R_ACPI_IO_BASE + 0x4;
 	fadt->pm1b_cnt_blk = 0x0;
 	/* once we support C2/C3 this could be set to 0x22 and chipset needs to be adjusted too */
-	fadt->pm2_cnt_blk = 0x22;
+	fadt->pm2_cnt_blk = 0x0;
 	fadt->pm_tmr_blk = VT8237R_ACPI_IO_BASE + 0x8;
 	fadt->gpe0_blk = VT8237R_ACPI_IO_BASE + 0x20;
 	if (is_vt8237s) {
@@ -78,13 +77,13 @@ void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 
 	fadt->pm1_evt_len = 4;
 	fadt->pm1_cnt_len = 2;
-	fadt->pm2_cnt_len = 1;
+	fadt->pm2_cnt_len = 0;
 	fadt->pm_tmr_len = 4;
 	fadt->gpe0_blk_len = 4;
 
 	fadt->cst_cnt = 0;
-	fadt->p_lvl2_lat = 80;
-	fadt->p_lvl3_lat = 800;
+	fadt->p_lvl2_lat = 90;
+	fadt->p_lvl3_lat = 900;
 	fadt->flush_size = 0;
 	fadt->flush_stride = 0;
 	fadt->duty_offset = 0;
