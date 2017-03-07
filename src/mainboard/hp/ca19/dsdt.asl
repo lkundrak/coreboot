@@ -184,6 +184,48 @@ DefinitionBlock(
 				Return (XCRS);
 			}
 
+
+
+
+
+			/* "Table 9. APIC Fixed IRQ Routing
+			 * When the internal APIC is enabled, internal IRQ
+			 * routing to the APIC is fixed as follows:" */
+			Name (APRT, Package () {
+				/* The graphics controller behind the AGP bridge */
+				/* INTA# => IRQ16 INTB# => IRQ17 INTC# => IRQ18 INTD# => IRQ19 */
+				Package (4) { 0x0001ffff, 0, 0x00, 16 },
+				Package (4) { 0x0001ffff, 1, 0x00, 17 },
+				Package (4) { 0x0001ffff, 2, 0x00, 18 },
+				Package (4) { 0x0001ffff, 3, 0x00, 19 },
+
+				/* IDE (Native Mode)/SATA IRQ & INTE => IRQ20 */
+				Package (4) { 0x000fffff, 0, 0x00, 20 },
+				Package (4) { 0x000fffff, 1, 0x00, 20 },
+				Package (4) { 0x000fffff, 2, 0x00, 20 },
+				Package (4) { 0x000fffff, 3, 0x00, 20 },
+
+				/* USB IRQ (all 5 functions) and INTF => IRQ21 */
+				Package (4) { 0x0010ffff, 0, 0x00, 21 },
+				Package (4) { 0x0010ffff, 1, 0x00, 21 },
+				Package (4) { 0x0010ffff, 2, 0x00, 21 },
+				Package (4) { 0x0010ffff, 3, 0x00, 21 },
+
+				/* AC’97 / MC’97 IRQ and INTG => IRQ22 */
+				Package (4) { 0x0011ffff, 0, 0x00, 22 },
+				Package (4) { 0x0011ffff, 1, 0x00, 22 },
+				Package (4) { 0x0011ffff, 2, 0x00, 22 },
+				Package (4) { 0x0011ffff, 3, 0x00, 22 },
+
+				/* LAN IRQ and INTH => IRQ23 */
+				Package (4) { 0x0012ffff, 0, 0x00, 23 },
+				Package (4) { 0x0012ffff, 1, 0x00, 23 },
+				Package (4) { 0x0012ffff, 2, 0x00, 23 },
+				Package (4) { 0x0012ffff, 3, 0x00, 23 }
+			})
+
+
+
 			Name (XPRT, Package (20) {
 				/* AGP bridge */
 				Package (4) { 0x0001ffff, 0, LNKA, 0x00 },
@@ -203,7 +245,7 @@ DefinitionBlock(
 				Package (4) { 0x0010ffff, 2, LNKC, 0x00 },
 				Package (4) { 0x0010ffff, 3, LNKD, 0x00 },
 
-				/* LPC bridge */
+				/* Audio (& LPC bridge) */
 				Package (4) { 0x0011ffff, 0, LNKA, 0x00 },
 				Package (4) { 0x0011ffff, 1, LNKB, 0x00 },
 				Package (4) { 0x0011ffff, 2, LNKC, 0x00 },
@@ -217,7 +259,12 @@ DefinitionBlock(
 			})
 			Method (_PRT, 0) {
 				Store ("=== Called _PRT ===", Debug)
-				Return (XPRT);
+				If (LEqual (PICF, Zero)) {
+					Store ("=== Called _PRT PIC ===", Debug)
+					Return (XPRT);
+				}
+				Store ("=== Called _PRT APIC ===", Debug)
+				Return (APRT);
 			}
 
 			/* The DRAM controller */
