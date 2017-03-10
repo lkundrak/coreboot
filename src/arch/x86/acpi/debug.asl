@@ -159,7 +159,7 @@ Method(DBGD, 1)
 */
 Method(DBGO, 1)
 {
-	/* DINI() */
+	DINI()
 	if (LEqual(ObjectType(Arg0), 1)) {
 		if (LGreater(Arg0, 0xffff)) {
 			DBGD(Arg0)

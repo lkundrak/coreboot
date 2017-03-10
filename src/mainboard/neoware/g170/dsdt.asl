@@ -23,6 +23,8 @@ DefinitionBlock(
 	0x20170227	// OEM revision
 )
 {
+	#include <arch/x86/acpi/debug.asl>
+
 	/* Sleep states */
 	Name (\_S0, Package (0x04) { 0x00, 0x00, 0x00, 0x00 })
 	Name (\_S5, Package (0x04) { 0x02, 0x02, 0x02, 0x02 })
