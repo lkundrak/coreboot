@@ -297,7 +297,7 @@ DefinitionBlock(
 						Store (R0EA, Local0)
 					}
 					/* The granularity is 64M */
-					ShiftLeft (Local0, 30, Local0)
+					ShiftLeft (Local0, 26, Local0)
 					Return (Local0)
 				}
 			}
