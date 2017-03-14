@@ -27,11 +27,9 @@ DefinitionBlock(
 	}
 
 	/* Interrupt model */
-	Name (PICF, Zero)
 	Method (_PIC, 1) {
 		Store (Arg0, \_SB.PCI0.ISAC.APIC)
-		Store (Arg0, \PICF)
-		if (PICF) {
+		if (Arg0) {
 			Store ("=== Selected APIC mode ===", Debug);
 			Return ();
 		}
@@ -262,7 +260,7 @@ DefinitionBlock(
 			})
 			Method (_PRT, 0) {
 				Store ("=== Called _PRT ===", Debug)
-				If (LEqual (PICF, Zero)) {
+				If (LEqual (\_SB.PCI0.ISAC.APIC, Zero)) {
 					Store ("=== Called _PRT PIC ===", Debug)
 					Return (XPRT);
 				}
