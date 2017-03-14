@@ -29,6 +29,7 @@ DefinitionBlock(
 	/* Interrupt model */
 	Name (PICF, Zero)
 	Method (_PIC, 1) {
+		Store (Arg0, \_SB.PCI0.ISAC.APIC)
 		Store (Arg0, \PICF)
 		if (PICF) {
 			Store ("=== Selected APIC mode ===", Debug);
@@ -299,6 +300,24 @@ DefinitionBlock(
 					/* The granularity is 64M */
 					ShiftLeft (Local0, 26, Local0)
 					Return (Local0)
+				}
+			}
+
+			/* VT8237 ISA bridge */
+			Device (ISAC)
+			{
+				Name (_ADR, 0x00110000)
+
+				OperationRegion (ISAB, PCI_Config, 0x00, 0xEF)
+				Field (ISAB, DWordAcc, NoLock, Preserve) {
+					RTCB, 1,	/* RTC Rx32 Map to Century Byte */
+					RT0D, 1,	/* RTC Rx0D Write Protect Enable */
+					RT32, 1,	/* RTC Rx32 Write Protect Enable */
+					RTHB, 1,	/* RTC High Bank Access Enable */
+					ADPS, 1,	/* Positive Address Decode */
+					IC33, 1,	/* South Bridge Interrupt Cycles Run at 33 MHz */
+					APIC, 1,	/* Internal APIC Enable */
+					DMAB, 1,	/* PCI DMA Pair B Enable */
 				}
 			}
 		}
