@@ -275,7 +275,9 @@ DefinitionBlock(
 
 				OperationRegion (MEMB, PCI_Config, 0x00, 0xEF)
 				Field (MEMB, DWordAcc, NoLock, Preserve) {
-					Offset (0x40),	/* DRAM Rank Ending Address */
+
+					/* DRAM Rank Ending Address */
+					Offset (0x40),
 					R0EA, 8,	/* Rank 0 Ending Address */
 					R1EA, 8,	/* Rank 1 Ending Address */
 					R2EA, 8,	/* Rank 2 Ending Address */
@@ -306,16 +308,38 @@ DefinitionBlock(
 			{
 				Name (_ADR, 0x00110000)
 
+				Method (_INI, 0) {
+					Store ("=== XXXX ===", Debug)
+					Store (\_SB.PCI0.ISAC.INTA, Debug)
+					Store (\_SB.PCI0.ISAC.INTB, Debug)
+					Store (\_SB.PCI0.ISAC.INTC, Debug)
+					Store (\_SB.PCI0.ISAC.INTD, Debug)
+					Store (\_SB.PCI0.ISAC.APIC, Debug)
+					Store ("=== EOXXXX ===", Debug)
+				}
+
 				OperationRegion (ISAB, PCI_Config, 0x00, 0xEF)
 				Field (ISAB, DWordAcc, NoLock, Preserve) {
-					RTCB, 1,	/* RTC Rx32 Map to Century Byte */
-					RT0D, 1,	/* RTC Rx0D Write Protect Enable */
-					RT32, 1,	/* RTC Rx32 Write Protect Enable */
-					RTHB, 1,	/* RTC High Bank Access Enable */
-					ADPS, 1,	/* Positive Address Decode */
-					IC33, 1,	/* South Bridge Interrupt Cycles Run at 33 MHz */
+
+					/* PCI PNP Interrupt Routing 1 */
+					Offset (0x55),
+					    , 4,	/* Reserved */
+					INTA, 4,	/* PCI INTA# Routing */
+
+					/* PCI PNP Interrupt Routing 2 */
+					Offset (0x56),
+					INTB, 4,	/* PCI INTB# Routing */
+					INTC, 4,	/* PCI INTC# Routing */
+
+					/* PCI PNP Interrupt Routing 3 */
+					Offset (0x57),
+					    , 4,	/* Reserved */
+					INTD, 4,	/* PCI INTD# Routing */
+
+					/* Miscellaneous Control 0 */
+					Offset (0x58),
+					    , 6,
 					APIC, 1,	/* Internal APIC Enable */
-					DMAB, 1,	/* PCI DMA Pair B Enable */
 				}
 			}
 		}
