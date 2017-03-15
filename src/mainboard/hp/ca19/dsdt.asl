@@ -10,6 +10,7 @@ DefinitionBlock(
 )
 {
 	#include <arch/x86/acpi/debug.asl>
+	#include <arch/x86/acpi/statdef.asl>
 
 	/* Sleep states */
 	Name (\_S0, Package (0x04) { 0x00, 0x00, 0x00, 0x00 })
@@ -37,113 +38,215 @@ DefinitionBlock(
 	}
 
 	Scope (\_SB) {
+		/* Possible PNP IRQs */
+		Name (PIRQ, ResourceTemplate () {
+			IRQ (Level, ActiveLow, Shared) {1, 3, 4, 5, 6, 7, 9, 10, 11, 12, 14, 15}
+		})
+
 		Device (LNKA) {
 			Name (_HID, EisaId ("PNP0C0F"))
 			Name (_UID, 1)
 
-			Name (PRSA, ResourceTemplate () { IRQ (Level, ActiveLow, Shared) {11} })
-			Method (_PRS, 0) {
-				Store ("=== Called LNKA _PRS ===", Debug)
-				Return (PRSA)
+			Method (_STA, 0) {
+				If (LEqual (\_SB.PCI0.ISAC.INTA, 0x00)) {
+					Return (STA_DISABLED)
+				}
+				Return (STA_INVISIBLE)
 			}
 
-			Name (CRSA, ResourceTemplate () { IRQ (Level, ActiveLow, Shared) {11} })
+			Method (_PRS, 0) {
+				Store ("=== Called LNKA _PRS ===", Debug)
+				Return (PIRQ)
+			}
+
+			Name (CRSA, ResourceTemplate () {
+				IRQ (Level, ActiveLow, Shared, FUHA) {}
+			})
 			Method (_CRS, 0) {
 				Store ("=== Called LNKA _CRS ===", Debug)
+				CreateWordField (CRSA, 0x1, AINT)
+				ShiftLeft (One, \_SB.PCI0.ISAC.INTA, AINT)
+				Store (\_SB.PCI0.ISAC.INTA, Debug)
+				Store ("=== End of LNKA _CRS ===", Debug)
 				Return (CRSA)
 			}
 
 			Method (_SRS, 1) {
 				Store ("=== Called LNKA _SRS ===", Debug)
+
+				CreateWordField (Arg0, 0x1, ALAL)
+				Store (Zero, Local0)
+				Store (ALAL, Local1)
+				While (LNotEqual (Local1, One)) {
+					ShiftRight (Local1, One, Local1)
+					Increment (Local0)
+				}
+				Store (Local0, \_SB.PCI0.ISAC.INTA)
+				Store (\_SB.PCI0.ISAC.INTA, Debug)
+
 				Store (Arg0, Debug)
 				Store ("=== End of LNKA _SRS ===", Debug)
 			}
 
 			Method (_DIS, 0) {
 				Store ("=== Called LNKA _DIS ===", Debug)
+				Store (Zero, \_SB.PCI0.ISAC.INTA)
 			}
 		}
 
 		Device (LNKB) {
 			Name (_HID, EisaId ("PNP0C0F"))
-			Name (_UID, 2)
+			Name (_UID, 1)
 
-			Name (PRSB, ResourceTemplate () { IRQ (Level, ActiveLow, Shared) {5} })
-			Method (_PRS, 0) {
-				Store ("=== Called LNKB _PRS ===", Debug)
-				Return (PRSB)
+			Method (_STA, 0) {
+				If (LEqual (\_SB.PCI0.ISAC.INTB, 0x00)) {
+					Return (STA_DISABLED)
+				}
+				Return (STA_INVISIBLE)
 			}
 
-			Name (CRSB, ResourceTemplate () { IRQ (Level, ActiveLow, Shared) {5} })
+			Method (_PRS, 0) {
+				Store ("=== Called LNKB _PRS ===", Debug)
+				Return (PIRQ)
+			}
+
+			Name (CRSA, ResourceTemplate () {
+				IRQ (Level, ActiveLow, Shared, FUHA) {}
+			})
 			Method (_CRS, 0) {
 				Store ("=== Called LNKB _CRS ===", Debug)
-				Return (CRSB)
+				CreateWordField (CRSA, 0x1, AINT)
+				ShiftLeft (One, \_SB.PCI0.ISAC.INTB, AINT)
+				Store (\_SB.PCI0.ISAC.INTB, Debug)
+				Store ("=== End of LNKB _CRS ===", Debug)
+				Return (CRSA)
 			}
 
 			Method (_SRS, 1) {
 				Store ("=== Called LNKB _SRS ===", Debug)
+
+				CreateWordField (Arg0, 0x1, ALAL)
+				Store (Zero, Local0)
+				Store (ALAL, Local1)
+				While (LNotEqual (Local1, One)) {
+					ShiftRight (Local1, One, Local1)
+					Increment (Local0)
+				}
+				Store (Local0, \_SB.PCI0.ISAC.INTB)
+				Store (\_SB.PCI0.ISAC.INTB, Debug)
+
 				Store (Arg0, Debug)
 				Store ("=== End of LNKB _SRS ===", Debug)
 			}
 
 			Method (_DIS, 0) {
 				Store ("=== Called LNKB _DIS ===", Debug)
+				Store (Zero, \_SB.PCI0.ISAC.INTB)
 			}
 		}
 
 		Device (LNKC) {
 			Name (_HID, EisaId ("PNP0C0F"))
-			Name (_UID, 3)
+			Name (_UID, 1)
 
-			Name (PRSC, ResourceTemplate () { IRQ (Level, ActiveLow, Shared) {10} })
-			Method (_PRS, 0) {
-				Store ("=== Called LNKC _PRS ===", Debug)
-				Return (PRSC)
+			Method (_STA, 0) {
+				If (LEqual (\_SB.PCI0.ISAC.INTC, 0x00)) {
+					Return (STA_DISABLED)
+				}
+				Return (STA_INVISIBLE)
 			}
 
-			Name (CRSC, ResourceTemplate () { IRQ (Level, ActiveLow, Shared) {10} })
+			Method (_PRS, 0) {
+				Store ("=== Called LNKC _PRS ===", Debug)
+				Return (PIRQ)
+			}
+
+			Name (CRSA, ResourceTemplate () {
+				IRQ (Level, ActiveLow, Shared, FUHA) {}
+			})
 			Method (_CRS, 0) {
 				Store ("=== Called LNKC _CRS ===", Debug)
-				Return (CRSC)
+				CreateWordField (CRSA, 0x1, AINT)
+				ShiftLeft (One, \_SB.PCI0.ISAC.INTC, AINT)
+				Store (\_SB.PCI0.ISAC.INTC, Debug)
+				Store ("=== End of LNKC _CRS ===", Debug)
+				Return (CRSA)
 			}
 
 			Method (_SRS, 1) {
 				Store ("=== Called LNKC _SRS ===", Debug)
+
+				CreateWordField (Arg0, 0x1, ALAL)
+				Store (Zero, Local0)
+				Store (ALAL, Local1)
+				While (LNotEqual (Local1, One)) {
+					ShiftRight (Local1, One, Local1)
+					Increment (Local0)
+				}
+				Store (Local0, \_SB.PCI0.ISAC.INTC)
+				Store (\_SB.PCI0.ISAC.INTC, Debug)
+
 				Store (Arg0, Debug)
 				Store ("=== End of LNKC _SRS ===", Debug)
 			}
 
 			Method (_DIS, 0) {
 				Store ("=== Called LNKC _DIS ===", Debug)
+				Store (Zero, \_SB.PCI0.ISAC.INTC)
 			}
 		}
 
 		Device (LNKD) {
 			Name (_HID, EisaId ("PNP0C0F"))
-			Name (_UID, 3)
+			Name (_UID, 1)
 
-			Name (PRSD, ResourceTemplate () { IRQ (Level, ActiveLow, Shared) {0} })
-			Method (_PRS, 0) {
-				Store ("=== Called LNKD _PRS ===", Debug)
-				Return (PRSD)
+			Method (_STA, 0) {
+				If (LEqual (\_SB.PCI0.ISAC.INTD, 0x00)) {
+					Return (STA_DISABLED)
+				}
+				Return (STA_INVISIBLE)
 			}
 
-			Name (CRSD, ResourceTemplate () { IRQ (Level, ActiveLow, Shared) {0} })
+			Method (_PRS, 0) {
+				Store ("=== Called LNKD _PRS ===", Debug)
+				Return (PIRQ)
+			}
+
+			Name (CRSA, ResourceTemplate () {
+				IRQ (Level, ActiveLow, Shared, FUHA) {}
+			})
 			Method (_CRS, 0) {
 				Store ("=== Called LNKD _CRS ===", Debug)
-				Return (CRSD)
+				CreateWordField (CRSA, 0x1, AINT)
+				ShiftLeft (One, \_SB.PCI0.ISAC.INTD, AINT)
+				Store (\_SB.PCI0.ISAC.INTD, Debug)
+				Store ("=== End of LNKD _CRS ===", Debug)
+				Return (CRSA)
 			}
 
 			Method (_SRS, 1) {
 				Store ("=== Called LNKD _SRS ===", Debug)
+
+				CreateWordField (Arg0, 0x1, ALAL)
+				Store (Zero, Local0)
+				Store (ALAL, Local1)
+				While (LNotEqual (Local1, One)) {
+					ShiftRight (Local1, One, Local1)
+					Increment (Local0)
+				}
+				Store (Local0, \_SB.PCI0.ISAC.INTD)
+				Store (\_SB.PCI0.ISAC.INTD, Debug)
+
 				Store (Arg0, Debug)
 				Store ("=== End of LNKD _SRS ===", Debug)
 			}
 
 			Method (_DIS, 0) {
 				Store ("=== Called LNKD _DIS ===", Debug)
+				Store (Zero, \_SB.PCI0.ISAC.INTD)
 			}
 		}
+
 
 		/* PCI bus */
 		Device (PCI0) {
