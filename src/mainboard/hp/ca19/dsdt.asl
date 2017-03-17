@@ -40,7 +40,8 @@ DefinitionBlock(
 	Scope (\_SB) {
 		/* Possible PNP IRQs */
 		Name (PIRQ, ResourceTemplate () {
-			IRQ (Level, ActiveLow, Shared) {1, 3, 4, 5, 6, 7, 9, 10, 11, 12, 14, 15}
+			//IRQ (Level, ActiveLow, Shared) {1, 3, 4, 5, 6, 7, 9, 10, 11, 12, 14, 15}
+			IRQ (Level, ActiveLow, Shared) {3, 4, 6, 7, 10, 11, 12}
 		})
 
 		Device (LNKA) {
