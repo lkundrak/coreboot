@@ -1,2 +1,2 @@
-config BOARD_BCOM_WINNETP680
-	bool "WinNET P680"
+config BOARD_NEOWARE_G170
+	bool "HP Neoware G170 (CA19)"

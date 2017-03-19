@@ -1,1 +1,8 @@
-Category: settop
+Category: mini
+Vendor name: Neoware Inc.
+Board name: G170
+ROM package: PLCC
+ROM protocol: Parallel
+ROM socketed: y
+Flashrom support: y
+Release year: 2006
