@@ -14,4 +14,5 @@
 ## GNU General Public License for more details.
 ##
 
+romstage-$(CONFIG_SUPERIO_VIA_VT1211) += early_serial.c
 ramstage-$(CONFIG_SUPERIO_VIA_VT1211) += vt1211.c
