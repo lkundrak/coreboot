@@ -31,4 +31,9 @@
 #define VT1211_FIR		0x0c	/* Very fast IR (VFIR/FIR) */
 #define VT1211_ROM		0x0d	/* Flash ROM */
 
+#include <arch/io.h>
+#include <stdint.h>
+
+void vt1211_enable_serial(pnp_devfn_t dev, u16 iobase);
+
 #endif
