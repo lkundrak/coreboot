@@ -1,0 +1,2 @@
+config BOARD_HP_T5550
+	bool "t5550 Thin Client"
