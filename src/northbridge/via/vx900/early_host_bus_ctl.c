@@ -23,12 +23,13 @@ static void vx900_cpu_bus_preram_setup(void)
 	/* CPU Interface Control - Basic Options */
 	pci_mod_config8(HOST_BUS, 0x51, 0, 0x6c);
 	/*CPU Interface Control - Advanced Options */
-	pci_write_config8(HOST_BUS, 0x52, 0xc7);
+	pci_write_config8(HOST_BUS, 0x52, 0xcf);
 	/* Enable 8QW burst and 4QW request merging [4] and [2]
 	 * and special mode for read cycles bit[3] */
 	pci_mod_config8(HOST_BUS, 0x54, 0, (1 << 4) | (1 << 2) | (1 << 3));
 	/* High priority upstream requests on V4 bus */
 	pci_write_config8(HOST_BUS, 0x56, 0x03);
+	pci_write_config8(HOST_BUS, 0x57, 0x01);
 	/* CPU to DRAM extra 1T access control */
 	pci_mod_config8(HOST_BUS, 0x59, 0x00, (1 << 2));
 	/* Queue reordering */
@@ -36,17 +37,29 @@ static void vx900_cpu_bus_preram_setup(void)
 	/* Only Write cycle of CPU->GFXCTL will flush the CPU->Memory FIFO */
 	pci_mod_config8(HOST_BUS, 0x98, 0x00, 0x60);
 	/* 1T delay for data on CPU bus */
-	pci_write_config8(HOST_BUS, 0x9e, 0x0e);
+	pci_write_config8(HOST_BUS, 0x9e, 0xce);
 	/* Arbitrate ownership of DRAM controller a few cycles earlier */
 	pci_mod_config8(HOST_BUS, 0x9f, 0x00, (1 << 7));
 	/* Write retire policy */
-	pci_write_config8(HOST_BUS, 0x5d, 0xa2);
+	pci_write_config8(HOST_BUS, 0x5d, 0x22);
 	/* Occupancy timer */
 	pci_write_config8(HOST_BUS, 0x53, 0x44);
 	/* Medium Threshold for Write Retire Policy - 6 requests */
 	pci_mod_config8(HOST_BUS, 0x56, 0x00, 0x60);
 	/* Bandwidth timer */
 	pci_write_config8(HOST_BUS, 0x5e, 0x44);
+
+	pci_write_config8(HOST_BUS, 0x76, 0x0c);
+	pci_write_config8(HOST_BUS, 0x7a, 0x00);
+	pci_write_config8(HOST_BUS, 0x7f, 0x00);
+	pci_write_config8(HOST_BUS, 0x84, 0x00);
+	pci_write_config8(HOST_BUS, 0x85, 0x00);
+	pci_write_config8(HOST_BUS, 0x86, 0x00);
+	pci_write_config8(HOST_BUS, 0x87, 0x00);
+	pci_write_config8(HOST_BUS, 0x88, 0x00);
+	pci_write_config8(HOST_BUS, 0x89, 0x00);
+	pci_write_config8(HOST_BUS, 0x8a, 0x00);
+	pci_write_config8(HOST_BUS, 0x8b, 0x00);
 }
 
 /**
