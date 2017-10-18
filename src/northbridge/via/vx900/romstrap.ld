@@ -17,8 +17,12 @@
  */
 
 SECTIONS {
-	. = (0x100000000 - 0x2c) - (__romstrap_end - __romstrap_start);
+	. = 0xfffff000;
 	.romstrap (.): {
 		KEEP(*(.romstrap))
+	}
+	. = 0xffffffd0;
+	.romstrapptr (.): {
+		KEEP(*(.romstrapptr))
 	}
 }
