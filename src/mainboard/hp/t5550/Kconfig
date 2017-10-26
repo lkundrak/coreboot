@@ -42,4 +42,8 @@ config IRQ_SLOT_COUNT
 	int
 	default 13
 
+config BOOTBLOCK_MAINBOARD_INIT
+	string
+	default "mainboard/hp/t5550/bootblock.c"
+
 endif # BOARD_HP_T5550
