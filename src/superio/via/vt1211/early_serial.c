@@ -57,9 +57,8 @@ void vt1211_enable_serial(pnp_devfn_t dev, u16 iobase)
 {
 	pnp_enter_conf_state(dev);
 	pnp_set_logical_device(dev);
-	//pnp_set_enable(dev, 0);
-	// this is the defailt
-	// pnp_write_config(dev, PNP_IDX_IO0, (iobase << 2) & 0xff);
+	pnp_set_enable(dev, 0);
+	pnp_write_config(dev, PNP_IDX_IO0, (iobase << 2) & 0xff);
 	pnp_set_enable(dev, 1);
 	pnp_exit_conf_state(dev);
 }
