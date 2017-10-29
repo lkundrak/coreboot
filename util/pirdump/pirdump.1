@@ -1,0 +1,56 @@
+.TH PIRDUMP 1 "October 29, 2017"
+.SH NAME
+pirdump \- dump the PCI Interrupt Routing table
+.SH SYNOPSIS
+.B pirdump [format] [<dump file>]
+.SH DESCRIPTION
+.B pirdump
+dumps the PIR table from memory or a dump file in a variety of formats.
+.SH OPTIONS
+.TP
+.B "\-d" | "\-\-default"
+Dump in human-readable format (default).
+.TP
+.B "\-r" | "\-\-raw"
+Dump the raw (binary) table data.
+.TP
+.B "\-c" | "\-\-C"
+Dump the C language snippet with Coreboot's "struct
+irq_routing_table" initializer.
+.TP
+.B "\-\-"
+Keeps the default format. This is useful if your dump file name starts with a
+dash.
+.TP
+.B "<dump file>"
+Look for the PIR table in the provided file instead of memory.
+.SH EXAMPLES
+.TP
+.B "pirdump"
+Look for the system's PIR table and print it in a human-readable form.
+.TP
+.B "pirdump --raw >dump.pir"
+Dump the system's PIR table into a file.
+.TP
+.B "pirdump -c dump.pir"
+Read a the PIR table dump from a file and print it in a C language form.
+.B "pirdump build/ramstage/mainboard/hp/t5550/irq_tables.o"
+Find the PIR table in an object file and print it in a human-readable form.
+.SH BUGS
+The checksum and table size is not checked for validity.
+.P
+Works only on little-endian systems.
+.P
+Please report any bugs to https://ticket.coreboot.org/projects/coreboot or the
+coreboot mailing list at <coreboot@coreboot.org>.
+.SH LICENCE
+.B pirdump
+is covered by the GNU General Public License (GPL), version 2  or (at your
+option) any later version.
+.SH SEE ALSO
+.BR flashrom (1),
+.BR abuild (1).
+.SH COPYRIGHT
+2017 Lubomir Rintel
+.SH AUTHORS
+2017 Lubomir Rintel <lkundrak@v3.sk>
