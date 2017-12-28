@@ -1492,7 +1492,6 @@ static void vx900_dram_range(ramctr_timing * ctrl, rank_layout * ranks)
 	size_t i, vrank = 0;
 	u8 reg8;
 	u32 ramsize_mb = 0, tolm_mb;
-	const u32 TOLM_3_5G = (7 << 29);
 	/* All unused physical ranks go to VR3. Otherwise, the MCU might be
 	 * trying to read or write from unused ranks, or even worse, write some
 	 * bits to the rank we want, and some to the unused ranks, even though
@@ -1534,10 +1533,8 @@ static void vx900_dram_range(ramctr_timing * ctrl, rank_layout * ranks)
 		vrank++;
 	}
 
-	/* Limit the Top of Low memory at 3.5G
-	 * Not to worry, we'll set tolm in ramstage, once we have initialized
-	 * all devices and know pci_tolm. */
-	tolm_mb = MIN(ramsize_mb, TOLM_3_5G >> 20);
+	/* Limit the Top of Low memory at PCI MMCONF window (3.5G) */
+	tolm_mb = MIN(ramsize_mb, CONFIG_MMCONF_BASE_ADDRESS >> 20);
 	u16 reg_tolm = (tolm_mb << 4) & 0xfff0;
 	pci_mod_config16(MCU, 0x84, 0xfff0, reg_tolm);
 
