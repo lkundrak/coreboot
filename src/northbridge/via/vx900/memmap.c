@@ -1,0 +1,94 @@
+#define __SIMPLE_DEVICE__
+
+#include "vx900.h"
+
+#include <device/pci.h>
+#include <cbmem.h>
+
+#define MCU PCI_DEV(0, 0, 3)
+#define SCRATCH PCI_DEV(0, 0, 6)
+
+#define CHROME_9_HD_MIN_FB_SIZE   8
+#define CHROME_9_HD_MAX_FB_SIZE 512
+
+/* Helper to determine the framebuffer size */
+void vx900_set_chrome9hd_fb_size(u32 size_mb)
+{
+	u8 reg8, ranksize;
+	u32 tom_mb, max_size_mb;
+	int i;
+
+	/* The minimum framebuffer size is 8MB. */
+	size_mb = MAX(size_mb, CHROME_9_HD_MIN_FB_SIZE);
+
+	/*
+	 * We have two limitations on the maximum framebuffer size:
+	 * 1) (Sanity) No more that 1/4 of system RAM
+	 * 2) (Hardware limitation) No larger than DRAM in last rank
+	 * Check both of these limitations and apply them to our framebuffer */
+	tom_mb = (pci_read_config16(MCU, 0x88) & 0x07ff) << (24 - 20);
+	max_size_mb = tom_mb >> 2;
+	if (size_mb > max_size_mb) {
+		printk(BIOS_ALERT, "The framebuffer size of %dMB is larger"
+		       " than 1/4 of available memory.\n"
+		       " Limiting framebuffer to %dMB\n", size_mb, max_size_mb);
+		size_mb = max_size_mb;
+	}
+
+	/* Now handle limitation #2
+	 * Look at the ending address of the memory ranks, from last to first,
+	 * until we find one that is not zero. That is our last rank, and its
+	 * size is the limit of our framebuffer. */
+	/* FIXME:  This has a bug. If we remap memory above 4G, we consider the
+	 * memory hole as part of our RAM. Thus if we install 3G, with a TOLM of
+	 * 2.5G, our TOM will be at 5G and we'll assume we have 5G RAM instead
+	 * of the actual 3.5G */
+	for (i = VX900_MAX_MEM_RANKS - 1; i > -1; i--) {
+		reg8 = pci_read_config8(MCU, 0x40 + i);
+		if (reg8 == 0)
+			continue;
+		/* We've reached the last populated rank */
+		ranksize = reg8 - pci_read_config8(MCU, 0x48 + i);
+		max_size_mb = ranksize << 6;
+		/* That's it. We got what we needed. */
+		break;
+	};
+	if (size_mb > max_size_mb) {
+		printk(BIOS_ALERT, "The framebuffer size of %dMB is larger"
+		       " than size of the last DRAM rank.\n"
+		       " Limiting framebuffer to %dMB\n", size_mb, max_size_mb);
+		size_mb = max_size_mb;
+	}
+
+	/* Now round the framebuffer size to the closest power of 2 */
+	u8 fb_pow = 0;
+	while (size_mb >> fb_pow)
+		fb_pow++;
+	fb_pow--;
+	size_mb = (1 << fb_pow);
+
+	/* We store the framebuffer size in bytes, for simplicity */
+	pci_write_config32(SCRATCH, 0x40, size_mb << 20);
+}
+
+u32 vx900_get_chrome9hd_fb_size(void)
+{
+	return pci_read_config32(SCRATCH, 0x40);
+}
+
+u32 vx900_get_tolm(void)
+{
+	return (pci_read_config16(MCU, 0x84) & 0xfff0) >> 4;
+}
+
+void *cbmem_top(void)
+{
+	u32 tolm;
+
+	tolm = vx900_get_tolm ();
+
+	if (tolm > 0xfc0 || tolm <= 0x3ff)
+		return NULL;
+
+	return (void *)((tolm << 20) - (vx900_get_chrome9hd_fb_size ()));
+}

@@ -216,7 +216,7 @@ static u64 vx900_remap_above_4g(device_t mcu, u32 tolm)
 
 static void vx900_set_resources(device_t dev)
 {
-	u32 pci_tolm, tomk, vx900_tolm, full_tolmk, fbufk, tolmk;
+	u32 tomk, full_tolmk, fbufk, tolmk;
 
 	printk(BIOS_DEBUG, "========================================"
 		    "========================================\n");
@@ -235,25 +235,18 @@ static void vx900_set_resources(device_t dev)
 		    "but couldn't find it. Halting.\n");
 	}
 
-	/* How much low adrress space do we have? */
-	pci_tolm = find_pci_tolm(dev->link_list);
-	printk(BIOS_SPEW, "Found PCI tolm at           %.8x\n", pci_tolm);
-	printk(BIOS_SPEW, "Found PCI tolm at           %dMB\n", pci_tolm >> 20);
-
 	/* Figure out the total amount of RAM */
 	tomk = vx900_get_top_of_ram(mcu) >> 10;
 	printk(BIOS_SPEW, "Found top of memory at      %dMB\n", tomk >> 10);
 
 	/* Do the same for top of low RAM */
-	vx900_tolm = (pci_read_config16(mcu, 0x84) & 0xfff0) >> 4;
-	full_tolmk = vx900_tolm << (20 - 10);
+	full_tolmk = vx900_get_tolm() << (20 - 10);
 	/* Remap above 4G if needed */
-	full_tolmk = MIN(full_tolmk, pci_tolm >> 10);
 	printk(BIOS_SPEW, "Found top of low memory at  %dMB\n",
 	       full_tolmk >> 10);
 
 	/* What about the framebuffer for the integrated GPU? */
-	fbufk = chrome9hd_fb_size() >> 10;
+	fbufk = vx900_get_chrome9hd_fb_size() >> 10;
 	printk(BIOS_SPEW, "Integrated graphics buffer: %dMB\n", fbufk >> 10);
 
 	/* Can't use the framebuffer as system RAM, sorry */
@@ -275,11 +268,10 @@ static void vx900_set_resources(device_t dev)
 	printk(BIOS_DEBUG, "UMA @ %lldMB + %lldMB\n", uma_memory_base >> 20,
 	       uma_memory_size >> 20);
 	/* FIXME: How do we handle remapping above 4G? */
-	u64 tor = vx900_remap_above_4g(mcu, pci_tolm);
+
+	u64 tor = vx900_remap_above_4g(mcu, full_tolmk << 10);
 	if (tor)
 		ram_resource(dev, idx++, RAM_4GB >> 10, (tor - RAM_4GB) >> 10);
-
-	set_late_cbmem_top(tolmk << 10);
 
 	printk(BIOS_DEBUG, "======================================================\n");
 	assign_resources(dev->link_list);
