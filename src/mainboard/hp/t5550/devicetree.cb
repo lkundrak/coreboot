@@ -35,7 +35,7 @@ chip northbridge/via/vx900		# Northbridge
 			chip drivers/generic/ioapic
 				register "have_isa_interrupts" = "0"
 				register "irq_on_fsb" = "1"
-				register "enable_virtual_wire" = "1"
+				#register "enable_virtual_wire" = "1"
 				register "base" = "(void *)0xfecc0000"
 				device ioapic 2 on end
 			end
@@ -43,27 +43,47 @@ chip northbridge/via/vx900		# Northbridge
 		device pci 0.6  off end		# [6410] Scratch Registers
 		device pci 0.7  on end		# [7410] V4 Link Control
 		device pci 1.0  on		# [7122] VGA Chrome9 HD
-			ioapic_irq 2 INTA 0x28
+			ioapic_irq 2 INTA 0x10
 		end
-		device pci 1.1  on		# [9170] Audio Device
-			ioapic_irq 2 INTA 0x29
+		device pci 1.1  on end		# [9170] Audio Device
+
+		device pci 3.0  on		# [a410] PEX1
+			ioapic_irq 2 INTA 0x3
 		end
-		device pci 3.0  on end		# [a410] PEX1
-		device pci 3.1  on end		# [b410] PEX2
-		device pci 3.2  on end		# [c410] PEX3
-		device pci 3.3  on end		# [d410] PEX4
+		device pci 3.1  on		# [b410] PEX2
+			ioapic_irq 2 INTB 0x7
+		end
+		device pci 3.2  on		# [c410] PEX3
+			ioapic_irq 2 INTC 0xb
+		end
+		device pci 3.3  on		# [d410] PEX4
+			ioapic_irq 2 INTD 0xf
+		end
+
 		device pci 3.4  on end		# [e410] PCIE bridge
 		device pci b.0  off end		# [a409] USB Device
 		device pci c.0  off end		# [95d0] SDIO Host Controller
 		device pci d.0  off end		# [9530] Memory Card controller
+
+		#device pci f.0  off end
 		device pci f.0  on		# [9001] SATA Controller
-			ioapic_irq 1 INTA 0x15
+			#ioapic_irq 1 INTA 0x15
+			#ioapic_irq 1 INTA 0xe
 		end
-		device pci 10.0 on end		# [3038] USB 1.1
-		device pci 10.1 on end		# [3038] USB 1.1
-		device pci 10.2 on end		# [3038] USB 1.1
+
+		device pci 10.0 on		# [3038] USB 1.1
+			ioapic_irq 1 INTA 0x14
+		end
+		device pci 10.1 on		# [3038] USB 1.1
+			ioapic_irq 1 INTB 0x16
+		end
+		device pci 10.2 on		# [3038] USB 1.1
+			ioapic_irq 1 INTC 0x15
+		end
 		device pci 10.3 off end		# [3038] USB 1.1
-		device pci 10.4 on end		# [3104] USB 2.0
+		device pci 10.4 on		# [3104] USB 2.0
+			ioapic_irq 1 INTD 0x17
+		end
 		device pci 11.0 on		# [8410] LPC Bus Control
 			chip drivers/generic/ioapic
 				register "have_isa_interrupts" = "1"
@@ -72,6 +92,7 @@ chip northbridge/via/vx900		# Northbridge
 				register "base" = "(void *)0xfec00000"
 				device ioapic 1 on end
 			end
+
 			#chip drivers/generic/generic	# DIMM 0 channel 1
 			#	device i2c 50 on end
 			#end
