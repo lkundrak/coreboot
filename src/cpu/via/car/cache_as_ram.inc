@@ -161,6 +161,13 @@ clear_fixed_var_mtrr_out:
 	movl	$(CacheBase + CacheSize - 4), %eax
 	movl	%eax, %esp
 
+nop; nop; nop; nop;
+nop; nop; nop; nop;
+nop; nop; nop; nop;
+nop; nop; nop; nop;
+nop; nop; nop; nop;
+nop; nop; nop; nop;
+
 	/* Restore the BIST result. */
 	movl	%ebp, %eax
 
